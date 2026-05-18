@@ -1,19 +1,13 @@
-package com.example.authtoga
+package com.example.authtoga.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.authtoga.data.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
-sealed class AuthState {
-    object Idle : AuthState()
-    object Loading : AuthState()
-    data class Success(val message: String, val email: String = "") : AuthState()
-    data class Error(val message: String) : AuthState()
-}
 
 class AuthViewModel : ViewModel() {
 

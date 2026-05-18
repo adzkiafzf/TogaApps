@@ -1,4 +1,4 @@
-package com.example.authtoga
+package com.example.authtoga.antarmuka
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.airbnb.lottie.compose.*
+import com.example.authtoga.R
+import com.example.authtoga.viewmodel.AuthState
+import com.example.authtoga.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(
@@ -64,33 +67,24 @@ fun RegisterScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         LottieAnimation(
-            modifier = Modifier
-                .size(300.dp)
-                .align(Alignment.CenterHorizontally),
+            modifier = Modifier.size(300.dp).align(Alignment.CenterHorizontally),
             composition = composition,
             progress = { progress }
         )
 
         Text(text = "Daftar Akun", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-
         Spacer(modifier = Modifier.height(16.dp))
 
         TextField(
             value = email,
             onValueChange = { email = it },
             label = {
-                Text(
-                    emailError.ifEmpty { "Email" },
-                    color = if (emailError.isNotEmpty()) Red else Color.Unspecified
-                )
+                Text(emailError.ifEmpty { "Email" }, color = if (emailError.isNotEmpty()) Red else Color.Unspecified)
             },
             leadingIcon = { Icon(Icons.Rounded.AccountCircle, contentDescription = "") },
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 20.dp),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
+            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
             singleLine = true
         )
 
@@ -100,29 +94,18 @@ fun RegisterScreen(
             value = password,
             onValueChange = { password = it },
             label = {
-                Text(
-                    passwordError.ifEmpty { "Password" },
-                    color = if (passwordError.isNotEmpty()) Red else Color.Unspecified
-                )
+                Text(passwordError.ifEmpty { "Password" }, color = if (passwordError.isNotEmpty()) Red else Color.Unspecified)
             },
             leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = "") },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val image = if (passwordVisible)
-                    painterResource(id = R.drawable.outline_visibility_24)
+                val image = if (passwordVisible) painterResource(id = R.drawable.outline_visibility_24)
                 else painterResource(id = R.drawable.baseline_visibility_off_24)
-                Icon(
-                    painter = image,
-                    contentDescription = "",
-                    modifier = Modifier.clickable { passwordVisible = !passwordVisible }
-                )
+                Icon(painter = image, contentDescription = "", modifier = Modifier.clickable { passwordVisible = !passwordVisible })
             },
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 20.dp),
-            colors = TextFieldDefaults.colors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
+            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
             singleLine = true
         )
 
@@ -135,24 +118,16 @@ fun RegisterScreen(
                 onClick = {
                     emailError = if (email.isBlank()) "Email is required" else ""
                     passwordError = if (password.isBlank()) "Password is required" else ""
-                    if (emailError.isEmpty() && passwordError.isEmpty()) {
-                        viewModel.register(email, password)
-                    }
+                    if (emailError.isEmpty() && passwordError.isEmpty()) viewModel.register(email, password)
                 },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 90.dp)
-            ) {
-                Text(text = "Daftar")
-            }
+            ) { Text(text = "Daftar") }
 
             Spacer(modifier = Modifier.height(50.dp))
 
             Row {
                 Text(text = "Sudah punya akun?")
-                Text(
-                    text = " Login di sini!",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { onNavigateToLogin() }
-                )
+                Text(text = " Login di sini!", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { onNavigateToLogin() })
             }
         }
     }

@@ -1,4 +1,4 @@
-package com.example.authtoga
+package com.example.authtoga.data
 
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
@@ -11,7 +11,6 @@ object SupabaseClient {
         supabaseUrl = SUPABASE_URL,
         supabaseKey = SUPABASE_ANON_KEY
     ) {
-        // PERBAIKAN: Hapus import HttpResponseCache dan pastikan install di sini benar
         install(Auth)
     }
 }
