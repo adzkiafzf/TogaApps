@@ -1,31 +1,34 @@
 package com.example.authtoga.antarmuka
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.airbnb.lottie.compose.*
 import com.example.authtoga.R
+import com.example.authtoga.ui.theme.DarkGreen
+import com.example.authtoga.ui.theme.PrimaryGreen
 import com.example.authtoga.viewmodel.AuthState
 import com.example.authtoga.viewmodel.AuthViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
@@ -40,13 +43,6 @@ fun LoginScreen(
 
     val authState by viewModel.authState.collectAsState()
     val context = LocalContext.current
-
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.login_animation))
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        iterations = LottieConstants.IterateForever,
-        speed = 0.7f
-    )
 
     LaunchedEffect(authState) {
         when (authState) {
@@ -63,75 +59,210 @@ fun LoginScreen(
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(PrimaryGreen, DarkGreen)
+                )
+            )
     ) {
-        LottieAnimation(
-            modifier = Modifier.size(300.dp).align(Alignment.CenterHorizontally),
-            composition = composition,
-            progress = { progress }
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Top Nav Mockup (Mobile adapted)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground), // Placeholder for logo
+                        contentDescription = "Logo",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp).background(Color(0xFF4CAF50), RoundedCornerShape(4.dp))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "TOGA",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                }
+                Row {
+                    TextButton(onClick = onNavigateToRegister) {
+                        Text("Daftar", color = Color.White)
+                    }
+                }
+            }
 
-        Text(text = "Login", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-        TextField(
-            value = email,
-            onValueChange = { email = it },
-            label = {
-                Text(emailError.ifEmpty { "Email" }, color = if (emailError.isNotEmpty()) Red else Color.Unspecified)
-            },
-            leadingIcon = { Icon(Icons.Rounded.AccountCircle, contentDescription = "") },
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 20.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-            singleLine = true
-        )
+            // Central Logo
+            Surface(
+                modifier = Modifier.size(64.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF8BC34A).copy(alpha = 0.2f)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground), // Placeholder
+                    contentDescription = null,
+                    tint = Color(0xFF8BC34A),
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = {
-                Text(passwordError.ifEmpty { "Password" }, color = if (passwordError.isNotEmpty()) Red else Color.Unspecified)
-            },
-            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = "") },
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible) painterResource(id = R.drawable.outline_visibility_24)
-                else painterResource(id = R.drawable.baseline_visibility_off_24)
-                Icon(painter = image, contentDescription = "", modifier = Modifier.clickable { passwordVisible = !passwordVisible })
-            },
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 20.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
-            singleLine = true
-        )
+            Text(
+                text = "Masuk ke TOGA",
+                color = Color.White,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Selamat datang kembali",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 16.sp
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        if (authState is AuthState.Loading) {
-            CircularProgressIndicator()
-        } else {
-            Button(
-                onClick = {
-                    emailError = if (email.isBlank()) "Email is required" else ""
-                    passwordError = if (password.isBlank()) "Password is required" else ""
-                    if (emailError.isEmpty() && passwordError.isEmpty()) viewModel.login(email, password)
-                },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 90.dp)
-            ) { Text(text = "Login") }
+            // Login Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Text(text = "Email", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it; emailError = "" },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("nama@email.com") },
+                        isError = emailError.isNotEmpty(),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryGreen,
+                            unfocusedBorderColor = Color.LightGray
+                        )
+                    )
+                    if (emailError.isNotEmpty()) {
+                        Text(text = emailError, color = Color.Red, fontSize = 12.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Kata Sandi", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text(
+                            text = "Lupa password?",
+                            color = PrimaryGreen,
+                            fontSize = 12.sp,
+                            modifier = Modifier.clickable { }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it; passwordError = "" },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val image = if (passwordVisible) painterResource(id = R.drawable.outline_visibility_24)
+                            else painterResource(id = R.drawable.baseline_visibility_off_24)
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(painter = image, contentDescription = null)
+                            }
+                        },
+                        isError = passwordError.isNotEmpty(),
+                        shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryGreen,
+                            unfocusedBorderColor = Color.LightGray
+                        )
+                    )
+                    if (passwordError.isNotEmpty()) {
+                        Text(text = passwordError, color = Color.Red, fontSize = 12.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    if (authState is AuthState.Loading) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally), color = PrimaryGreen)
+                    } else {
+                        Button(
+                            onClick = {
+                                if (email.isBlank()) emailError = "Email wajib diisi"
+                                if (password.isBlank()) passwordError = "Password wajib diisi"
+                                if (email.isNotBlank() && password.isNotBlank()) viewModel.login(email, password)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                        ) {
+                            Text("Masuk", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(text = "Belum punya akun? ", fontSize = 14.sp)
+                        Text(
+                            text = "Daftar sekarang",
+                            color = PrimaryGreen,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            modifier = Modifier.clickable { onNavigateToRegister() }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text(text = "Forget Password?", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { })
-            Spacer(modifier = Modifier.height(50.dp))
 
-            Row {
-                Text(text = "Belum punya akun?")
-                Text(text = " Daftar di sini!", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { onNavigateToRegister() })
+            // Admin Demo Info
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                color = Color.Black.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "Demo Admin: admin@toga.com / password",
+                    color = Color.White,
+                    modifier = Modifier.padding(12.dp),
+                    textAlign = TextAlign.Center,
+                    fontSize = 12.sp
+                )
             }
+            
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
