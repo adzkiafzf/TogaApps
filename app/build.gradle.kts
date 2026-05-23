@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -56,6 +57,7 @@ dependencies {
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.1"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
 
     // Ktor Client (Wajib untuk Supabase)
     implementation("io.ktor:ktor-client-android:3.0.1")
@@ -63,6 +65,12 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
+    // Lifecycle runtime compose (untuk collectAsStateWithLifecycle)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
     // Lottie
     implementation("com.airbnb.android:lottie-compose:6.0.0")
+
+    // Coil (load gambar dari URI)
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

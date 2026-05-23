@@ -2,6 +2,8 @@ package com.example.authtoga.data
 
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
 
 object SupabaseClient {
     private const val SUPABASE_URL = "https://mrchzfuknwoynxtrlitm.supabase.co"
@@ -12,5 +14,7 @@ object SupabaseClient {
         supabaseKey = SUPABASE_ANON_KEY
     ) {
         install(Auth)
+        install(Postgrest)
+        install(Storage)
     }
 }

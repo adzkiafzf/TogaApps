@@ -1,18 +1,61 @@
 package com.example.authtoga.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.authtoga.data.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonPrimitive
+
+@Serializable
+data class Feedback(
+    val user_email: String,
+    val tampilkan_username: Boolean,
+    val tentang: String,
+    val detail: String
+)
+
+@Serializable
+data class ProfileUpsert(
+    val email: String,
+    val display_name: String,
+    val avatar_url: String
+)
 
 class AuthViewModel : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState
+
+    private val _currentEmail = MutableStateFlow("")
+    val currentEmail: StateFlow<String> = _currentEmail
+
+    private val _userName = MutableStateFlow("")
+    val userName: StateFlow<String> = _userName
+
+    private val _editNama = MutableStateFlow("")
+    val editNama: StateFlow<String> = _editNama
+
+    private val _profileUpdateState = MutableStateFlow<String?>(null)
+    val profileUpdateState: StateFlow<String?> = _profileUpdateState
+
+    private val _photoUri = MutableStateFlow<Uri?>(null)
+    val photoUri: StateFlow<Uri?> = _photoUri
+
+    private val _avatarUrl = MutableStateFlow<String?>(null)
+    val avatarUrl: StateFlow<String?> = _avatarUrl
+
+    private val _feedbackState = MutableStateFlow<String?>(null)
+    val feedbackState: StateFlow<String?> = _feedbackState
 
     fun login(email: String, password: String) {
         val domain = email.substringAfterLast("@")
@@ -27,11 +70,122 @@ class AuthViewModel : ViewModel() {
                     this.email = email
                     this.password = password
                 }
+                _currentEmail.value = email
+                loadDisplayName(email)
                 _authState.value = AuthState.Success("Login Berhasil!", email)
             } catch (e: Exception) {
                 _authState.value = AuthState.Error("Email atau Password salah")
             }
         }
+    }
+
+    private suspend fun loadDisplayName(email: String) {
+        try {
+            val user = SupabaseClient.client.auth.retrieveUserForCurrentSession(updateSession = true)
+            val displayName = user.userMetadata
+                ?.get("display_name")
+                ?.jsonPrimitive?.content
+                ?.takeIf { it.isNotBlank() }
+                ?: email.substringBefore("@")
+            val avatarUrl = user.userMetadata
+                ?.get("avatar_url")
+                ?.jsonPrimitive?.content
+                ?.takeIf { it.isNotBlank() } ?: ""
+            _userName.value = displayName
+            _editNama.value = displayName
+            _avatarUrl.value = avatarUrl.ifBlank { null }
+            // selalu sync ke profiles agar admin selalu dapat data terbaru
+            try {
+                SupabaseClient.client.postgrest["profiles"].upsert(
+                    ProfileUpsert(
+                        email = email,
+                        display_name = displayName,
+                        avatar_url = avatarUrl.substringBefore("?")
+                    )
+                )
+                android.util.Log.d("PROFILE_SYNC", "upsert login ok: $email, avatar: ${avatarUrl.substringBefore("?")}")
+            } catch (e: Exception) {
+                android.util.Log.e("PROFILE_SYNC", "upsert login error: ${e.message}")
+            }
+        } catch (e: Exception) {
+            _userName.value = email.substringBefore("@")
+            _editNama.value = _userName.value
+        }
+    }
+
+    fun setEditNama(nama: String) {
+        _editNama.value = nama
+    }
+
+    fun updateNama(newNama: String) {
+        viewModelScope.launch {
+            try {
+                SupabaseClient.client.auth.updateUser {
+                    data { put("display_name", JsonPrimitive(newNama)) }
+                }
+                // sync ke tabel profiles
+                SupabaseClient.client.postgrest["profiles"].upsert(
+                    ProfileUpsert(
+                        email = _currentEmail.value,
+                        display_name = newNama,
+                        avatar_url = _avatarUrl.value?.substringBefore("?") ?: ""
+                    )
+                )
+                _userName.value = newNama
+                _profileUpdateState.value = "Profil berhasil diperbarui"
+            } catch (e: Exception) {
+                _profileUpdateState.value = "Gagal menyimpan: ${e.localizedMessage}"
+            }
+        }
+    }
+
+    fun updatePhoto(uri: Uri, context: Context) {
+        _photoUri.value = uri
+        viewModelScope.launch {
+            try {
+                val email = _currentEmail.value
+                android.util.Log.d("PHOTO", "email: $email")
+                val fileName = "avatar_${email.replace("@", "_").replace(".", "_")}.jpg"
+                val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
+                if (bytes == null) {
+                    android.util.Log.e("PHOTO", "bytes null")
+                    return@launch
+                }
+                android.util.Log.d("PHOTO", "bytes: ${bytes.size}, file: $fileName")
+                SupabaseClient.client.storage["avatars"].upload(
+                    path = fileName,
+                    data = bytes
+                ) { upsert = true }
+                android.util.Log.d("PHOTO", "upload ok")
+                val publicUrl = SupabaseClient.client.storage["avatars"].publicUrl(fileName) +
+                        "?t=${System.currentTimeMillis()}"
+                android.util.Log.d("PHOTO", "url: $publicUrl")
+                SupabaseClient.client.auth.updateUser {
+                    data { put("avatar_url", JsonPrimitive(publicUrl)) }
+                }
+                android.util.Log.d("PHOTO", "metadata updated")
+                _avatarUrl.value = publicUrl
+                // sync ke tabel profiles
+                try {
+                    SupabaseClient.client.postgrest["profiles"].upsert(
+                        ProfileUpsert(
+                            email = _currentEmail.value,
+                            display_name = _userName.value,
+                            avatar_url = publicUrl.substringBefore("?")
+                        )
+                    )
+                    android.util.Log.d("PROFILE_SYNC", "upsert photo ok: ${publicUrl.substringBefore("?")}")
+                } catch (e: Exception) {
+                    android.util.Log.e("PROFILE_SYNC", "upsert photo error: ${e.message}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PHOTO", "error: ${e.message}", e)
+            }
+        }
+    }
+
+    fun resetProfileUpdateState() {
+        _profileUpdateState.value = null
     }
 
     fun register(email: String, password: String) {
@@ -54,6 +208,28 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun kirimFeedback(tampilkanUsername: Boolean, tentang: String, detail: String) {
+        viewModelScope.launch {
+            try {
+                SupabaseClient.client.postgrest["feedback"].insert(
+                    Feedback(
+                        user_email = _currentEmail.value,
+                        tampilkan_username = tampilkanUsername,
+                        tentang = tentang,
+                        detail = detail
+                    )
+                )
+                _feedbackState.value = "Tanggapan anda berhasil terkirim"
+            } catch (e: Exception) {
+                _feedbackState.value = "Gagal mengirim: ${e.localizedMessage}"
+            }
+        }
+    }
+
+    fun resetFeedbackState() {
+        _feedbackState.value = null
+    }
+
     fun resetState() {
         _authState.value = AuthState.Idle
     }
@@ -66,6 +242,11 @@ class AuthViewModel : ViewModel() {
                 // ignore
             } finally {
                 _authState.value = AuthState.Idle
+                _currentEmail.value = ""
+                _userName.value = ""
+                _editNama.value = ""
+                _photoUri.value = null
+                _avatarUrl.value = null
             }
         }
     }
