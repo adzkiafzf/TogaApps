@@ -1,11 +1,15 @@
 package com.example.authtoga.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.authtoga.antarmuka.AdminFeedbackListScreen
+import com.example.authtoga.antarmuka.AdminPlantFormScreen
+import com.example.authtoga.antarmuka.AdminPlantScreen
 import com.example.authtoga.antarmuka.AdminScreen
 import com.example.authtoga.antarmuka.EditProfileScreen
 import com.example.authtoga.antarmuka.FeedbackScreen
@@ -13,12 +17,14 @@ import com.example.authtoga.antarmuka.LoginScreen
 import com.example.authtoga.antarmuka.RegisterScreen
 import com.example.authtoga.antarmuka.UserScreen
 import com.example.authtoga.viewmodel.AuthViewModel
-import com.example.authtoga.viewmodel.FeedbackViewModel
+import com.example.authtoga.viewmodel.PlantViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
+    val plantViewModel: PlantViewModel = viewModel()
+    val editTarget by plantViewModel.editTarget.collectAsState()
 
     NavHost(navController = navController, startDestination = Screen.LOGIN) {
         composable(Screen.LOGIN) {
@@ -47,6 +53,7 @@ fun AppNavigation() {
                     }
                 },
                 onKelolaTanggapan = { navController.navigate(Screen.ADMIN_FEEDBACK) },
+                onKelolaTanaman = { navController.navigate(Screen.ADMIN_PLANT) },
                 viewModel = authViewModel
             )
         }
@@ -76,6 +83,27 @@ fun AppNavigation() {
         }
         composable(Screen.ADMIN_FEEDBACK) {
             AdminFeedbackListScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.ADMIN_PLANT) {
+            AdminPlantScreen(
+                onBack = { navController.popBackStack() },
+                onAddPlant = { navController.navigate(Screen.ADMIN_PLANT_FORM) },
+                onEditPlant = { plant ->
+                    plantViewModel.setEditTarget(plant)
+                    navController.navigate(Screen.ADMIN_PLANT_FORM)
+                },
+                viewModel = plantViewModel
+            )
+        }
+        composable(Screen.ADMIN_PLANT_FORM) {
+            AdminPlantFormScreen(
+                editPlant = editTarget,
+                onBack = {
+                    plantViewModel.clearEditTarget()
+                    navController.popBackStack()
+                },
+                viewModel = plantViewModel
+            )
         }
     }
 }

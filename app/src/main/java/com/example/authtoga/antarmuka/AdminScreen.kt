@@ -29,6 +29,7 @@ import com.example.authtoga.viewmodel.AuthViewModel
 fun AdminScreen(
     onLogout: () -> Unit,
     onKelolaTanggapan: () -> Unit,
+    onKelolaTanaman: () -> Unit = {},
     viewModel: AuthViewModel = viewModel()
 ) {
     val email by viewModel.currentEmail.collectAsState()
@@ -88,6 +89,12 @@ fun AdminScreen(
                 icon = Icons.Default.Star,
                 label = "Kelola Tanggapan User",
                 onClick = onKelolaTanggapan
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            AdminMenuCard(
+                icon = Icons.Default.List,
+                label = "Kelola Tanaman",
+                onClick = onKelolaTanaman
             )
             Spacer(modifier = Modifier.height(32.dp))
         }
