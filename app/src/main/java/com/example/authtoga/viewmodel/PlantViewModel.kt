@@ -32,8 +32,30 @@ class PlantViewModel : ViewModel() {
     private val _editTarget = MutableStateFlow<Plant?>(null)
     val editTarget: StateFlow<Plant?> = _editTarget
 
-    fun setEditTarget(plant: Plant) { _editTarget.value = plant }
-    fun clearEditTarget() { _editTarget.value = null }
+    // Form state — survive rotation karena ada di ViewModel
+    val formNama = MutableStateFlow("")
+    val formDeskripsi = MutableStateFlow("")
+    val formKhasiat = MutableStateFlow("")
+    val formKategori = MutableStateFlow("")
+    val formGambarUrl = MutableStateFlow("")
+
+    fun setEditTarget(plant: Plant) {
+        _editTarget.value = plant
+        formNama.value = plant.nama_tanaman
+        formDeskripsi.value = plant.deskripsi
+        formKhasiat.value = plant.khasiat
+        formKategori.value = plant.kategori
+        formGambarUrl.value = plant.gambar_url
+    }
+
+    fun clearEditTarget() {
+        _editTarget.value = null
+        formNama.value = ""
+        formDeskripsi.value = ""
+        formKhasiat.value = ""
+        formKategori.value = ""
+        formGambarUrl.value = ""
+    }
 
     init { loadPlants() }
 

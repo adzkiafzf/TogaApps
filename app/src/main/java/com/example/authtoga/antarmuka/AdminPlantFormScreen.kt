@@ -11,7 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,17 +37,27 @@ fun AdminPlantFormScreen(
     val state by viewModel.state.collectAsState()
     val uploadedUrl by viewModel.uploadedImageUrl.collectAsState()
 
-    var nama by remember { mutableStateOf(editPlant?.nama_tanaman ?: "") }
-    var deskripsi by remember { mutableStateOf(editPlant?.deskripsi ?: "") }
-    var khasiat by remember { mutableStateOf(editPlant?.khasiat ?: "") }
-    var kategori by remember { mutableStateOf(editPlant?.kategori ?: "") }
-    var gambarUrl by remember { mutableStateOf(editPlant?.gambar_url ?: "") }
-    var localImageUri by remember { mutableStateOf<Any?>(null) }
+    val nama by viewModel.formNama.collectAsState()
+    val deskripsi by viewModel.formDeskripsi.collectAsState()
+    val khasiat by viewModel.formKhasiat.collectAsState()
+    val kategori by viewModel.formKategori.collectAsState()
+    val gambarUrl by viewModel.formGambarUrl.collectAsState()
+
+    // Isi form saat pertama buka (mode tambah = kosong, sudah dihandle clearEditTarget)
+    LaunchedEffect(editPlant?.id) {
+        if (editPlant == null) {
+            viewModel.formNama.value = ""
+            viewModel.formDeskripsi.value = ""
+            viewModel.formKhasiat.value = ""
+            viewModel.formKategori.value = ""
+            viewModel.formGambarUrl.value = ""
+        }
+    }
 
     // Saat upload selesai, update gambarUrl
     LaunchedEffect(uploadedUrl) {
         if (uploadedUrl.isNotBlank()) {
-            gambarUrl = uploadedUrl
+            viewModel.formGambarUrl.value = uploadedUrl
             viewModel.resetUploadedUrl()
         }
     }
@@ -60,10 +72,7 @@ fun AdminPlantFormScreen(
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let {
-            localImageUri = it
-            viewModel.uploadImage(it, context)
-        }
+        uri?.let { viewModel.uploadImage(it, context) }
     }
 
     val isLoading = state is PlantState.Loading
@@ -93,7 +102,7 @@ fun AdminPlantFormScreen(
 
             // Foto tanaman
             Box(contentAlignment = Alignment.BottomEnd) {
-                val displayImage: Any? = localImageUri ?: gambarUrl.takeIf { it.isNotBlank() }
+                val displayImage: Any? = gambarUrl.takeIf { it.isNotBlank() }
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -128,7 +137,7 @@ fun AdminPlantFormScreen(
                 }
             }
 
-            if (isLoading && localImageUri != null && gambarUrl.isBlank()) {
+            if (isLoading && gambarUrl.isBlank()) {
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
@@ -136,10 +145,10 @@ fun AdminPlantFormScreen(
             Spacer(Modifier.height(20.dp))
 
             listOf(
-                Triple("Nama Tanaman", nama) { v: String -> nama = v },
-                Triple("Kategori", kategori) { v: String -> kategori = v },
-                Triple("Khasiat", khasiat) { v: String -> khasiat = v },
-                Triple("Deskripsi", deskripsi) { v: String -> deskripsi = v }
+                Triple("Nama Tanaman", nama) { v: String -> viewModel.formNama.value = v },
+                Triple("Kategori", kategori) { v: String -> viewModel.formKategori.value = v },
+                Triple("Khasiat", khasiat) { v: String -> viewModel.formKhasiat.value = v },
+                Triple("Deskripsi", deskripsi) { v: String -> viewModel.formDeskripsi.value = v }
             ).forEach { (label, value, onValueChange) ->
                 OutlinedTextField(
                     value = value,
