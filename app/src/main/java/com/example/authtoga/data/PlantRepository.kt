@@ -2,10 +2,12 @@ package com.example.authtoga.data
 
 import android.content.Context
 import android.net.Uri
+import com.example.authtoga.data.model.Treatment
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.storage.storage
 import kotlinx.serialization.Serializable
+
 
 @Serializable
 data class Plant(
@@ -57,5 +59,14 @@ object PlantRepository {
         val fileName = "plant_${System.currentTimeMillis()}.jpg"
         storage.upload(path = fileName, data = bytes) { upsert = true }
         return storage.publicUrl(fileName)
+    }
+
+    // TAMBAHKAN INI DI DALAM KELAS PLANTREPOSITORY (Tepat sebelum tanda } penutup kelas)
+    suspend fun getRecentTreatments(): List<Treatment> {
+        // Kita ganti 'supabase' menjadi 'SupabaseClient.client' sesuai objek kalian
+        return SupabaseClient.client.postgrest["treatments"]
+            .select {
+                limit(5)
+            }.decodeList<Treatment>()
     }
 }

@@ -16,6 +16,7 @@ import com.example.authtoga.antarmuka.FeedbackScreen
 import com.example.authtoga.antarmuka.LoginScreen
 import com.example.authtoga.antarmuka.RegisterScreen
 import com.example.authtoga.antarmuka.UserScreen
+import com.example.authtoga.antarmuka.dashboardUser.DashboardScreen
 import com.example.authtoga.viewmodel.AuthViewModel
 import com.example.authtoga.viewmodel.PlantViewModel
 
@@ -31,7 +32,9 @@ fun AppNavigation() {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate(Screen.REGISTER) },
                 onLoginSuccess = { email ->
-                    val destination = if (email.endsWith("@toga.com")) Screen.ADMIN else Screen.USER
+                    // SEBELUMNYA: jika bukan admin, lari ke Screen.USER
+                    // SEKARANG: diarahkan langsung menuju DASHBOARD buatan Nindy!
+                    val destination = if (email.endsWith("@toga.com")) Screen.ADMIN else Screen.DASHBOARD
                     navController.navigate(destination) {
                         popUpTo(Screen.LOGIN) { inclusive = true }
                     }
@@ -103,6 +106,27 @@ fun AppNavigation() {
                     navController.popBackStack()
                 },
                 viewModel = plantViewModel
+            )
+        }
+
+        // SEKSI DASHBOARD (Sudah disesuaikan menggunakan penamaan objek Screen resmi)
+        // UPDATE SEKSI DASHBOARD KAMU MENJADI SEPERTI INI
+        composable(Screen.DASHBOARD) {
+            DashboardScreen(
+                onNavigateToProfile = {
+                    navController.navigate(Screen.EDIT_PROFILE)
+                },
+                onNavigateToFeedback = {
+                    navController.navigate(Screen.FEEDBACK) // Menyambung ke halaman Feedback Adzkia
+                },
+                onNavigateToCatalog = {
+                    // Karena katalog tanaman buatan Anya biasanya ditaruh di UserScreen/AdminPlant,
+                    // kita arahkan sementara ke Screen.USER atau rute katalog kalian
+                    navController.navigate(Screen.USER)
+                },
+                onNavigateToDetail = { treatmentId ->
+                    navController.navigate("detail/$treatmentId")
+                }
             )
         }
     }
