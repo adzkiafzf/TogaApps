@@ -52,6 +52,12 @@ fun DashboardScreen(
     val state = viewModel.uiState
     var searchQuery by remember { mutableStateOf("") }
 
+    // ================= LOGIKA FILTER DI SINI =================
+    val filteredTreatments = state.recentTreatments.filter { treatment ->
+        treatment.title.contains(searchQuery, ignoreCase = true) ||
+                treatment.disease_target.contains(searchQuery, ignoreCase = true)
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar(
@@ -117,7 +123,7 @@ fun DashboardScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Baris Atas: Nama Aplikasi & Tombol Profil Nindy
+                            // Baris Atas: Nama Aplikasi & Tombol Profil
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -259,16 +265,34 @@ fun DashboardScreen(
                     }
                 } else {
                     item {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 20.dp),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            items(state.recentTreatments) { treatment ->
-                                TreatmentWebStyleCard(
-                                    treatment = treatment,
-                                    onClick = { treatment.id?.let { onNavigateToDetail(it) } }
+                        // Kondisi penolak jika input ketikan search tidak cocok dengan data apapun
+                        if (filteredTreatments.isEmpty() && searchQuery.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp, horizontal = 20.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Ramuan penyembuh tidak ditemukan.",
+                                    color = Color.Gray,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
+                            }
+                        } else {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 20.dp),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                // MENGGUNAKAN LIST FILTEREDTREATMENTS YANG BARU
+                                items(filteredTreatments) { treatment ->
+                                    TreatmentWebStyleCard(
+                                        treatment = treatment,
+                                        onClick = { treatment.id?.let { onNavigateToDetail(it) } }
+                                    )
+                                }
                             }
                         }
                     }
@@ -302,9 +326,8 @@ fun StatCard(count: String, label: String, modifier: Modifier = Modifier) {
 @Composable
 fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
 
-    // KUNCI AMAN RELASI DATABASE BARU: Menembak URL Supabase via angka plant_id (contoh: 1.jpg, 2.jpg)
-    val plantImageUrl = if (treatment.plant_id != null) {
-        "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/${treatment.plant_id}.jpg"
+    val treatmentImageUrl = if (treatment.id != null) {
+        "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
     } else {
         ""
     }
@@ -319,7 +342,6 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column {
-            // Bagian Tempat Gambar Tanaman Obat
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -327,10 +349,10 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                     .background(TogaGreenLight),
                 contentAlignment = Alignment.Center
             ) {
-                if (plantImageUrl.isNotBlank()) {
+                if (treatmentImageUrl.isNotBlank()) {
                     AsyncImage(
-                        model = plantImageUrl,
-                        contentDescription = "Gambar Tanaman",
+                        model = treatmentImageUrl,
+                        contentDescription = "Gambar Menu Resep",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Search),
@@ -346,7 +368,6 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                 }
             }
 
-            // Bagian Informasi Teks
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = treatment.title,
@@ -372,13 +393,11 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Tombol aksi mini hijau
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .background(TogaGreenDark)
-                        // KUNCI TAMBAHAN: Kita tempel clickable agar klik pada tombol juga memicu aksi buka detail halaman
                         .clickable { onClick() }
                         .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center

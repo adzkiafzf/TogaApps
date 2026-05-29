@@ -17,11 +17,14 @@ import com.example.authtoga.antarmuka.LoginScreen
 import com.example.authtoga.antarmuka.RegisterScreen
 import com.example.authtoga.antarmuka.UserScreen
 import com.example.authtoga.antarmuka.dashboardUser.DashboardScreen
+import com.example.authtoga.antarmuka.PlantCatalogScreen // Import halaman katalog baru
 import com.example.authtoga.viewmodel.AuthViewModel
 import com.example.authtoga.viewmodel.PlantViewModel
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.authtoga.antarmuka.detailTanamanUser.DetailScreen
+import com.example.authtoga.antarmuka.PlantInfoScreen
+
 
 @Composable
 fun AppNavigation() {
@@ -110,33 +113,77 @@ fun AppNavigation() {
             )
         }
 
-        // SEKSI DASHBOARD
+        // ================= SEKSI BERANDA / DASHBOARD =================
         composable(Screen.DASHBOARD) {
             DashboardScreen(
                 onNavigateToProfile = { navController.navigate(Screen.EDIT_PROFILE) },
                 onNavigateToFeedback = { navController.navigate(Screen.FEEDBACK) },
-                onNavigateToCatalog = { navController.navigate(Screen.USER) },
+                // PERBAIKAN: Klik tombol "Tanaman" di navbar sekarang mengarah ke Katalog Baru!
+                onNavigateToCatalog = { navController.navigate(Screen.PLANT_CATALOG) },
                 onNavigateToDetail = { treatmentId ->
-                    // PERBAIKAN: Kirim argumen dengan pola path yang dikenali sistem internal Android secara konsisten
                     navController.navigate("detail_screen/$treatmentId")
                 }
             )
         }
 
-        // PERBAIKAN RUTE DETAIL: Menggunakan nama rute yang unik agar tidak bentrok saat restore state
+        // ================= RUTE KATALOG TANAMAN BARU NINDY =================
+//        composable(Screen.PLANT_CATALOG) {
+//            PlantCatalogScreen(
+//                onNavigateToHome = {
+//                    navController.navigate(Screen.DASHBOARD) {
+//                        popUpTo(Screen.DASHBOARD) { inclusive = true }
+//                    }
+//                },
+//                onNavigateToFeedback = { navController.navigate(Screen.FEEDBACK) },
+//                onNavigateToProfile = { navController.navigate(Screen.EDIT_PROFILE) },
+//                onNavigateToDetail = { treatmentId ->
+//                    navController.navigate("detail_screen/$treatmentId")
+//                }
+//            )
+//        }
+
+        // ================= SEKSI DETAIL RAMUAN =================
         composable(
             route = "detail_screen/{treatmentId}",
-            arguments = listOf(
-                navArgument("treatmentId") {
-                    type = NavType.StringType
-                    nullable = false
-                }
-            )
+            arguments = listOf(navArgument("treatmentId") { type = NavType.StringType })
         ) { backStackEntry ->
             val treatmentId = backStackEntry.arguments?.getString("treatmentId") ?: ""
             DetailScreen(
                 treatmentId = treatmentId,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // DAFTARKAN SEKSI KATALOG TANAMAN INDUK DI APPNAVIGATION KELOMPOKMU
+        composable(Screen.PLANT_CATALOG) {
+            PlantCatalogScreen(
+                onNavigateToHome = {
+                    navController.navigate(Screen.DASHBOARD) {
+                        popUpTo(Screen.DASHBOARD) { inclusive = true }
+                    }
+                },
+                onNavigateToFeedback = { navController.navigate(Screen.FEEDBACK) },
+                onNavigateToProfile = { navController.navigate(Screen.EDIT_PROFILE) },
+                onNavigateToPlantDetail = { plantId ->
+                    // Lempar ID bertipe angka murni (Int) ke halaman detail tanaman induk baru kalian
+                    navController.navigate("plant_info_screen/$plantId")
+                }
+            )
+        }
+
+        // ================= RUTE BARU DETAIL INFORMASI TANAMAN INDUK NINDY =================
+        composable(
+            route = "plant_info_screen/{plantId}",
+            arguments = listOf(navArgument("plantId") { type = NavType.IntType }) // Menangkap ID integer tanaman induk
+        ) { backStackEntry ->
+            val plantId = backStackEntry.arguments?.getInt("plantId") ?: 0
+            PlantInfoScreen(
+                plantId = plantId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToTreatmentDetail = { treatmentId ->
+                    // Ketika resep diklik, otomatis melempar user menuju halaman cara penyajian!
+                    navController.navigate("detail_screen/$treatmentId")
+                }
             )
         }
     }

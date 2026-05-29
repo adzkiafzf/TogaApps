@@ -16,8 +16,8 @@ data class Plant(
     val deskripsi: String,
     val khasiat: String,
     val kategori: String,
-    val gambar_url: String = "",
-    val created_at: String = ""
+    val gambar_url: String? = "",
+    val created_at: String? = ""
 )
 
 @Serializable

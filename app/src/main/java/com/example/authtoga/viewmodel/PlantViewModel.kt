@@ -45,7 +45,8 @@ class PlantViewModel : ViewModel() {
         formDeskripsi.value = plant.deskripsi
         formKhasiat.value = plant.khasiat
         formKategori.value = plant.kategori
-        formGambarUrl.value = plant.gambar_url
+        // PERBAIKAN DI BARIS 48: Tambahkan ?: "" di ujungnya
+        formGambarUrl.value = plant.gambar_url ?: ""
     }
 
     fun clearEditTarget() {

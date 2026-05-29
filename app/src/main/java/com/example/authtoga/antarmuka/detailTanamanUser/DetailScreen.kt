@@ -63,8 +63,9 @@ fun DetailScreen(
             )
         } else {
             state.treatment?.let { treatment ->
-                val plantImageUrl = if (treatment.plant_id != null) {
-                    "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/${treatment.plant_id}.jpg"
+                // 1. DI SINI DIUBAH: Menembak folder bucket 'treatment-images' menggunakan treatment.id unik resep
+                val treatmentImageUrl = if (treatment.id != null) {
+                    "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
                 } else {
                     ""
                 }
@@ -82,8 +83,9 @@ fun DetailScreen(
                             .height(260.dp)
                     ) {
                         AsyncImage(
-                            model = plantImageUrl,
-                            contentDescription = "Foto Tanaman",
+                            // 2. DI SINI DIUBAH: Memakai variabel URL treatmentImageUrl yang baru
+                            model = treatmentImageUrl,
+                            contentDescription = "Foto Sajian Ramuan",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -109,7 +111,7 @@ fun DetailScreen(
                                 .align(Alignment.CenterHorizontally)
                         )
 
-                        // NAMA RAMUAN HERBAL - Diubah Menggunakan Serif Bold Italic Premium & Lebih Besar
+                        // NAMA RAMUAN HERBAL
                         Text(
                             text = treatment.title,
                             fontSize = 28.sp,
@@ -121,7 +123,7 @@ fun DetailScreen(
                             modifier = Modifier.padding(top = 4.dp)
                         )
 
-                        // SPANDUK INFO KHASIAT UTAMA - Dibuat Kontras Tinggi & Sangat Menonjol (Teks Putih di Latar Hijau Tua)
+                        // SPANDUK INFO KHASIAT UTAMA
                         Card(
                             colors = CardDefaults.cardColors(containerColor = TogaGreenDark),
                             shape = RoundedCornerShape(12.dp),
@@ -151,7 +153,7 @@ fun DetailScreen(
 
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 2.dp))
 
-                        // ================= SEKSI BAHAN-BAHAN (KEMBALI KE BULLET POINT ESTETIK) =================
+                        // ================= SEKSI BAHAN-BAHAN =================
                         Text(
                             text = "Bahan-Bahan yang Diperlukan",
                             fontSize = 18.sp,
@@ -170,17 +172,16 @@ fun DetailScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.Top
                                     ) {
-                                        // Bullet penanda hijau tebal dengan jarak yang pas
                                         Text(
                                             text = "•  ",
                                             color = TogaGreenMedium,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 18.sp,
-                                            modifier = Modifier.padding(end = 4.  dp)
+                                            modifier = Modifier.padding(end = 4.dp)
                                         )
                                         Text(
                                             text = ingredient,
-                                            fontSize = 16.sp, // Ukuran teks tetap besar dan mudah dibaca orang tua
+                                            fontSize = 16.sp,
                                             fontWeight = FontWeight.Medium,
                                             color = Color(0xFF2C3E50),
                                             textAlign = TextAlign.Start
@@ -247,20 +248,18 @@ fun DetailScreen(
             }
         }
 
-        // ================= 3. FLOATING BACK BUTTON DENGAN WARNA KONTRAS BARU =================
+        // ================= 3. FLOATING BACK BUTTON MINIMALIS =================
         IconButton(
             onClick = onNavigateBack,
             modifier = Modifier
                 .padding(start = 16.dp, top = 16.dp)
                 .size(40.dp)
-                // UBAH DI SINI: Bulatannya diganti jadi hijau tua tema TOGA
                 .background(TogaGreenDark, shape = CircleShape)
                 .align(Alignment.TopStart)
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Kembali",
-                // UBAH DI SINI: Panahnya diganti jadi warna putih murni agar kontras mencolok
                 tint = Color.White
             )
         }

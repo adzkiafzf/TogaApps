@@ -14,4 +14,6 @@ object Screen {
     const val DASHBOARD = "dashboard"
 
     const val CATALOG = "catalog"
+
+    const val PLANT_CATALOG = "plant_catalog"
 }

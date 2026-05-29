@@ -47,7 +47,8 @@ fun AdminPlantScreen(
             text = { Text("Hapus \"${plant.nama_tanaman}\"?") },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deletePlant(plant.id, plant.gambar_url)
+                    // PERBAIKAN: Gunakan operator Elvis (?: "") agar jika gambarnya null, dia otomatis melempar string kosong yang aman
+                    viewModel.deletePlant(plant.id, plant.gambar_url ?: "")
                     deleteTarget = null
                 }) { Text("Hapus", color = MaterialTheme.colorScheme.error) }
             },
@@ -124,7 +125,8 @@ private fun PlantCard(plant: Plant, onEdit: () -> Unit, onDelete: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (plant.gambar_url.isNotBlank()) {
+            // PERBAIKAN: Gunakan !plant.gambar_url.isNullOrBlank() untuk memeriksa string aman dari null
+            if (!plant.gambar_url.isNullOrBlank()) {
                 AsyncImage(
                     model = plant.gambar_url,
                     contentDescription = plant.nama_tanaman,
@@ -137,7 +139,8 @@ private fun PlantCard(plant: Plant, onEdit: () -> Unit, onDelete: () -> Unit) {
                 Text(plant.nama_tanaman, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text(plant.kategori, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                 Text(
-                    plant.khasiat.take(60) + if (plant.khasiat.length > 60) "…" else "",
+                    // PERBAIKAN: Berikan fallback aman murni via elvis operator sebelum memotong teks panjang khasiat
+                    (plant.khasiat ?: "").take(60) + if ((plant.khasiat ?: "").length > 60) "…" else "",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
