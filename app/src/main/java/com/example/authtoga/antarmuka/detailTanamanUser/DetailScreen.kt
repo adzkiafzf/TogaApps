@@ -1,0 +1,268 @@
+package com.example.authtoga.antarmuka.detailTanamanUser
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.authtoga.viewmodel.DetailViewModel
+
+val TogaGreenDark = Color(0xFF1E5631)
+val TogaGreenMedium = Color(0xFF2C6B46)
+val TogaGreenLight = Color(0xFFE8F5E9)
+val TogaBackground = Color(0xFFF4F7F5)
+val TogaOrangeAccent = Color(0xFFE67E22)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailScreen(
+    treatmentId: String,
+    onNavigateBack: () -> Unit,
+    viewModel: DetailViewModel = viewModel()
+) {
+    val state = viewModel.uiState
+
+    LaunchedEffect(treatmentId) {
+        viewModel.loadTreatmentDetail(treatmentId)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(TogaBackground)
+    ) {
+        if (state.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = TogaGreenMedium
+            )
+        } else if (state.errorMessage != null) {
+            Text(
+                text = state.errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.align(Alignment.Center).padding(16.dp)
+            )
+        } else {
+            state.treatment?.let { treatment ->
+                val plantImageUrl = if (treatment.plant_id != null) {
+                    "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/${treatment.plant_id}.jpg"
+                } else {
+                    ""
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+
+                    // ================= 1. FOTO PRODUK / TANAMAN OBAT =================
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(260.dp)
+                    ) {
+                        AsyncImage(
+                            model = plantImageUrl,
+                            contentDescription = "Foto Tanaman",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    // ================= 2. KONTEN UTAMA (GAYA LEMBARAN MELENGKUNG) =================
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset(y = (-20).dp)
+                            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                            .background(Color.White)
+                            .padding(horizontal = 24.dp, vertical = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                    ) {
+                        // Garis pemanis abu-abu di atas judul
+                        Box(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .height(4.dp)
+                                .clip(CircleShape)
+                                .background(Color.LightGray.copy(alpha = 0.5f))
+                                .align(Alignment.CenterHorizontally)
+                        )
+
+                        // NAMA RAMUAN HERBAL - Diubah Menggunakan Serif Bold Italic Premium & Lebih Besar
+                        Text(
+                            text = treatment.title,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontStyle = FontStyle.Italic,
+                            fontFamily = FontFamily.Serif,
+                            color = TogaGreenDark,
+                            lineHeight = 36.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+
+                        // SPANDUK INFO KHASIAT UTAMA - Dibuat Kontras Tinggi & Sangat Menonjol (Teks Putih di Latar Hijau Tua)
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = TogaGreenDark),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Khasiat Utama: ",
+                                    fontWeight = FontWeight.Normal,
+                                    fontSize = 16.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                                Text(
+                                    text = treatment.disease_target,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 2.dp))
+
+                        // ================= SEKSI BAHAN-BAHAN (KEMBALI KE BULLET POINT ESTETIK) =================
+                        Text(
+                            text = "Bahan-Bahan yang Diperlukan",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TogaGreenDark
+                        )
+
+                        val ingredientsList = treatment.ingredients.split(",").map { it.trim() }
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ingredientsList.forEach { ingredient ->
+                                if (ingredient.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        // Bullet penanda hijau tebal dengan jarak yang pas
+                                        Text(
+                                            text = "•  ",
+                                            color = TogaGreenMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp,
+                                            modifier = Modifier.padding(end = 4.  dp)
+                                        )
+                                        Text(
+                                            text = ingredient,
+                                            fontSize = 16.sp, // Ukuran teks tetap besar dan mudah dibaca orang tua
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF2C3E50),
+                                            textAlign = TextAlign.Start
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        // ================= SEKSI LANGKAH PENYAJIAN =================
+                        Text(
+                            text = "Langkah-Langkah Penyajian",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TogaGreenDark
+                        )
+
+                        val instructionsList = treatment.instructions.replace("\\n", "\n").split("\n").map { it.trim() }
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            instructionsList.forEachIndexed { index, step ->
+                                if (step.isNotBlank()) {
+                                    val cleanStep = step.replace(Regex("^\\d+\\.\\s*"), "")
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(end = 12.dp, top = 2.dp)
+                                                .size(26.dp)
+                                                .background(TogaOrangeAccent, shape = CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = (index + 1).toString(),
+                                                color = Color.White,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+
+                                        Text(
+                                            text = cleanStep,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF2C3E50),
+                                            textAlign = TextAlign.Start,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+            }
+        }
+
+        // ================= 3. FLOATING BACK BUTTON DENGAN WARNA KONTRAS BARU =================
+        IconButton(
+            onClick = onNavigateBack,
+            modifier = Modifier
+                .padding(start = 16.dp, top = 16.dp)
+                .size(40.dp)
+                // UBAH DI SINI: Bulatannya diganti jadi hijau tua tema TOGA
+                .background(TogaGreenDark, shape = CircleShape)
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Kembali",
+                // UBAH DI SINI: Panahnya diganti jadi warna putih murni agar kontras mencolok
+                tint = Color.White
+            )
+        }
+    }
+}
