@@ -19,6 +19,9 @@ import com.example.authtoga.antarmuka.UserScreen
 import com.example.authtoga.antarmuka.dashboardUser.DashboardScreen
 import com.example.authtoga.viewmodel.AuthViewModel
 import com.example.authtoga.viewmodel.PlantViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.authtoga.antarmuka.detailTanamanUser.DetailScreen
 
 @Composable
 fun AppNavigation() {
@@ -32,8 +35,6 @@ fun AppNavigation() {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate(Screen.REGISTER) },
                 onLoginSuccess = { email ->
-                    // SEBELUMNYA: jika bukan admin, lari ke Screen.USER
-                    // SEKARANG: diarahkan langsung menuju DASHBOARD buatan Nindy!
                     val destination = if (email.endsWith("@toga.com")) Screen.ADMIN else Screen.DASHBOARD
                     navController.navigate(destination) {
                         popUpTo(Screen.LOGIN) { inclusive = true }
@@ -109,24 +110,33 @@ fun AppNavigation() {
             )
         }
 
-        // SEKSI DASHBOARD (Sudah disesuaikan menggunakan penamaan objek Screen resmi)
-        // UPDATE SEKSI DASHBOARD KAMU MENJADI SEPERTI INI
+        // SEKSI DASHBOARD
         composable(Screen.DASHBOARD) {
             DashboardScreen(
-                onNavigateToProfile = {
-                    navController.navigate(Screen.EDIT_PROFILE)
-                },
-                onNavigateToFeedback = {
-                    navController.navigate(Screen.FEEDBACK) // Menyambung ke halaman Feedback Adzkia
-                },
-                onNavigateToCatalog = {
-                    // Karena katalog tanaman buatan Anya biasanya ditaruh di UserScreen/AdminPlant,
-                    // kita arahkan sementara ke Screen.USER atau rute katalog kalian
-                    navController.navigate(Screen.USER)
-                },
+                onNavigateToProfile = { navController.navigate(Screen.EDIT_PROFILE) },
+                onNavigateToFeedback = { navController.navigate(Screen.FEEDBACK) },
+                onNavigateToCatalog = { navController.navigate(Screen.USER) },
                 onNavigateToDetail = { treatmentId ->
-                    navController.navigate("detail/$treatmentId")
+                    // PERBAIKAN: Kirim argumen dengan pola path yang dikenali sistem internal Android secara konsisten
+                    navController.navigate("detail_screen/$treatmentId")
                 }
+            )
+        }
+
+        // PERBAIKAN RUTE DETAIL: Menggunakan nama rute yang unik agar tidak bentrok saat restore state
+        composable(
+            route = "detail_screen/{treatmentId}",
+            arguments = listOf(
+                navArgument("treatmentId") {
+                    type = NavType.StringType
+                    nullable = false
+                }
+            )
+        ) { backStackEntry ->
+            val treatmentId = backStackEntry.arguments?.getString("treatmentId") ?: ""
+            DetailScreen(
+                treatmentId = treatmentId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

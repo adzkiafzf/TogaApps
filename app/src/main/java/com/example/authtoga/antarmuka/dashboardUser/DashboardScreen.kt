@@ -48,6 +48,7 @@ fun DashboardScreen(
     onNavigateToCatalog: () -> Unit = {},
     onNavigateToFeedback: () -> Unit = {}
 ) {
+
     val state = viewModel.uiState
     var searchQuery by remember { mutableStateOf("") }
 
@@ -129,7 +130,6 @@ fun DashboardScreen(
                                     color = Color.White
                                 )
 
-                                // VERSI FIX TANPA PAINTERRESOURCE SYSTEM YANG EROR
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -144,7 +144,6 @@ fun DashboardScreen(
                                             contentDescription = "Foto Profil",
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                            // Kalau internet lemot atau link di Supabase gak nemu gambar, otomatis pakai ikon ini:
                                             error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
                                             placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle)
                                         )
@@ -156,9 +155,7 @@ fun DashboardScreen(
                                             modifier = Modifier.fillMaxSize()
                                         )
                                     }
-
                                 }
-
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -185,7 +182,7 @@ fun DashboardScreen(
 
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            // Kolom Search Global (Tugas Adzkia)
+                            // Kolom Search Global
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
@@ -221,7 +218,7 @@ fun DashboardScreen(
                     }
                 }
 
-                // ================= 3. SEKSI CARA PENYAJIAN TERBARU (Tugas Nindy) =================
+                // ================= 3. SEKSI CARA PENYAJIAN TERBARU =================
                 item {
                     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                         Text(
@@ -305,11 +302,9 @@ fun StatCard(count: String, label: String, modifier: Modifier = Modifier) {
 @Composable
 fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
 
-    // TRICK PRAKTIS: Format Judul Ramuan agar Menjadi Nama File Foto
-    // Contoh: "Ramuan Daun Sirih Kebun" diubah otomatis menjadi "ramuandaunsirihkebun.jpg"
-    val plantImageUrl = if (!treatment.title.isNullOrBlank()) {
-        val formattedTitle = treatment.title.lowercase().replace(" ", "")
-        "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/$formattedTitle.jpg"
+    // KUNCI AMAN RELASI DATABASE BARU: Menembak URL Supabase via angka plant_id (contoh: 1.jpg, 2.jpg)
+    val plantImageUrl = if (treatment.plant_id != null) {
+        "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/${treatment.plant_id}.jpg"
     } else {
         ""
     }
@@ -338,7 +333,6 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                         contentDescription = "Gambar Tanaman",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        // KUNCI PERBAIKAN: Gunakan tint dan batasi ukuran icon fallback-nya di sini
                         error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Search),
                         placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Search)
                     )
@@ -352,7 +346,7 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                 }
             }
 
-            // Bagian Informasi Teks (Sama seperti sebelumnya)
+            // Bagian Informasi Teks
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = treatment.title,
@@ -384,10 +378,12 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
                         .background(TogaGreenDark)
+                        // KUNCI TAMBAHAN: Kita tempel clickable agar klik pada tombol juga memicu aksi buka detail halaman
+                        .clickable { onClick() }
                         .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "Lihat Detail →", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "Lihat Detail", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
