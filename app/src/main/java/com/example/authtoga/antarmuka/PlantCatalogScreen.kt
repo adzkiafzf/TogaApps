@@ -186,12 +186,9 @@ fun PlantCatalogScreen(
                 ) {
                     items(filteredPlants) { plant ->
 
-                        // FIX: Membangun kembali URL gambar tanaman asli dari folder 'plant-images'
-                        val plantImageUrl = if (plant.id != 0) {
-                            "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/${plant.id}.jpg"
-                        } else {
-                            ""
-                        }
+                        // FIX TOTAL: Langsung panggil isi variabel gambar_url murni dari Supabase!
+                        // Format "plant_angka.jpg" otomatis terpanggil dengan cara ini tanpa pusing mikirin ID lagi
+                        val plantImageUrl = plant.gambar_url ?: ""
 
                         Card(
                             onClick = { onNavigateToPlantDetail(plant.id) },
@@ -210,7 +207,7 @@ fun PlantCatalogScreen(
                                 ) {
                                     if (plantImageUrl.isNotBlank()) {
                                         AsyncImage(
-                                            model = plantImageUrl,
+                                            model = plantImageUrl, // Langsung menampilkan foto format plant_angka.jpg secara real-time
                                             contentDescription = plant.nama_tanaman,
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop

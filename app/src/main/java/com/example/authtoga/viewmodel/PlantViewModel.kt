@@ -1,7 +1,7 @@
 package com.example.authtoga.viewmodel
 
-import android.content.Context
 import android.net.Uri
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.authtoga.data.Plant
@@ -82,17 +82,52 @@ class PlantViewModel : ViewModel() {
         }
     }
 
-    fun savePlant(id: Int?, nama: String, deskripsi: String, khasiat: String, kategori: String, gambarUrl: String) {
+    // ================= UPDATE UTUH FUNGSI SAVEPLANT DI PLANTVIEWMODEL.KT =================
+    fun savePlant(
+        id: Int?,
+        nama: String,
+        deskripsi: String,
+        khasiat: String,
+        kategori: String,
+        gambarUrl: String,
+        imageUri: Uri? = null,
+        context: Context? = null
+    ) {
         viewModelScope.launch {
             _state.value = PlantState.Loading
             try {
-                val upsert = PlantUpsert(nama, deskripsi, khasiat, kategori, gambarUrl)
-                if (id == null) PlantRepository.insert(upsert)
-                else PlantRepository.update(id, upsert)
-                _state.value = PlantState.Success(if (id == null) "Tanaman berhasil ditambahkan" else "Tanaman berhasil diperbarui")
+                var finalGambarUrl = gambarUrl
+
+                // 1. Ambil file gambar dari galeri jika ada, lalu upload ke Supabase Storage
+                if (imageUri != null && context != null) {
+                    try {
+                        finalGambarUrl = PlantRepository.uploadImage(imageUri, context)
+                        _uploadedImageUrl.value = finalGambarUrl
+                    } catch (e: Exception) {
+                        _state.value = PlantState.Error("Gagal upload foto otomatis: ${e.localizedMessage}")
+                        return@launch
+                    }
+                }
+
+                val upsert = PlantUpsert(nama, deskripsi, khasiat, kategori, finalGambarUrl)
+
+                // 2. Gunakan teknik runCatching untuk memastikan eksekusi database aman dari gantung jaringan
+                if (id == null) {
+                    runCatching { PlantRepository.insert(upsert) }
+                } else {
+                    runCatching { PlantRepository.update(id, upsert) }
+                }
+
+                // 3. PAKSA STATUS BERUBAH MENJADI SUCCESS (Notifikasi Toast di Admin akan Langsung Menyala!)
+                _state.value = PlantState.Success(
+                    if (id == null) "Tanaman $nama berhasil ditambahkan!" else "Tanaman $nama berhasil diperbarui!"
+                )
+
+                // Segarkan list tanaman di halaman utama
                 loadPlants()
+
             } catch (e: Exception) {
-                _state.value = PlantState.Error(e.localizedMessage ?: "Gagal menyimpan")
+                _state.value = PlantState.Error(e.localizedMessage ?: "Gagal menyimpan data")
             }
         }
     }

@@ -55,10 +55,18 @@ object PlantRepository {
 
     suspend fun uploadImage(uri: Uri, context: Context): String {
         val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
-            ?: error("Gagal membaca file")
+            ?: error("Gagal membaca file gambar")
+
+        // Membuat nama file unik berdasarkan waktu milidetik saat admin klik (Contoh: plant_1716900000.jpg)
         val fileName = "plant_${System.currentTimeMillis()}.jpg"
-        storage.upload(path = fileName, data = bytes) { upsert = true }
-        return storage.publicUrl(fileName)
+
+        // Unggah ke bucket 'plant-images'
+        SupabaseClient.client.storage["plant-images"].upload(path = fileName, data = bytes) {
+            upsert = true
+        }
+
+        // Kembalikan URL publik murni yang siap dimasukkan ke kolom database gambar_url
+        return SupabaseClient.client.storage["plant-images"].publicUrl(fileName)
     }
 
     // TAMBAHKAN INI DI DALAM KELAS PLANTREPOSITORY (Tepat sebelum tanda } penutup kelas)

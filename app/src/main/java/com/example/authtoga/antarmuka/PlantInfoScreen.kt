@@ -90,7 +90,7 @@ fun PlantInfoScreen(
             )
         } else {
             plant?.let { currentPlant ->
-                val plantImageUrl = "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/plant-images/${currentPlant.id}.jpg"
+                val plantImageUrl = currentPlant.gambar_url ?: ""
 
                 Column(
                     modifier = Modifier

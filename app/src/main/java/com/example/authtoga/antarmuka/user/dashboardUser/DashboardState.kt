@@ -1,4 +1,4 @@
-package com.example.authtoga.antarmuka.dashboardUser
+package com.example.authtoga.antarmuka.user.dashboardUser
 
 import com.example.authtoga.data.model.Treatment
 

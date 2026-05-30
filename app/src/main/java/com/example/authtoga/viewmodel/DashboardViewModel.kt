@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.authtoga.antarmuka.dashboardUser.DashboardState
+import com.example.authtoga.antarmuka.user.dashboardUser.DashboardState
 import com.example.authtoga.data.PlantRepository
 import com.example.authtoga.data.SupabaseClient
 import io.github.jan.supabase.auth.auth

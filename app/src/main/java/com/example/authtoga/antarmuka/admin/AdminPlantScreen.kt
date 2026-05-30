@@ -1,5 +1,6 @@
-package com.example.authtoga.antarmuka
+package com.example.authtoga.antarmuka.admin
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,6 +31,7 @@ fun AdminPlantScreen(
     onBack: () -> Unit,
     onAddPlant: () -> Unit,
     onEditPlant: (Plant) -> Unit,
+    onPlantClick: (Plant) -> Unit, // Parameter baru untuk mendeteksi klik pada container tanaman
     viewModel: PlantViewModel = viewModel()
 ) {
     val plants by viewModel.plants.collectAsState()
@@ -47,7 +49,6 @@ fun AdminPlantScreen(
             text = { Text("Hapus \"${plant.nama_tanaman}\"?") },
             confirmButton = {
                 TextButton(onClick = {
-                    // PERBAIKAN: Gunakan operator Elvis (?: "") agar jika gambarnya null, dia otomatis melempar string kosong yang aman
                     viewModel.deletePlant(plant.id, plant.gambar_url ?: "")
                     deleteTarget = null
                 }) { Text("Hapus", color = MaterialTheme.colorScheme.error) }
@@ -99,7 +100,8 @@ fun AdminPlantScreen(
                         PlantCard(
                             plant = plant,
                             onEdit = { onEditPlant(plant) },
-                            onDelete = { deleteTarget = plant }
+                            onDelete = { deleteTarget = plant },
+                            onClick = { onPlantClick(plant) } // Card diklik mengarah ke detail resep
                         )
                     }
                 }
@@ -115,9 +117,16 @@ fun AdminPlantScreen(
 }
 
 @Composable
-private fun PlantCard(plant: Plant, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun PlantCard(
+    plant: Plant,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }, // Aksi ketika container item ditekan
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -125,8 +134,7 @@ private fun PlantCard(plant: Plant, onEdit: () -> Unit, onDelete: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // PERBAIKAN: Gunakan !plant.gambar_url.isNullOrBlank() untuk memeriksa string aman dari null
-            if (!plant.gambar_url.isNullOrBlank()) {
+            if (plant.gambar_url?.isNotBlank() == true) {
                 AsyncImage(
                     model = plant.gambar_url,
                     contentDescription = plant.nama_tanaman,
@@ -139,15 +147,17 @@ private fun PlantCard(plant: Plant, onEdit: () -> Unit, onDelete: () -> Unit) {
                 Text(plant.nama_tanaman, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text(plant.kategori, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                 Text(
-                    // PERBAIKAN: Berikan fallback aman murni via elvis operator sebelum memotong teks panjang khasiat
-                    (plant.khasiat ?: "").take(60) + if ((plant.khasiat ?: "").length > 60) "…" else "",
+                    plant.khasiat.take(60) + if (plant.khasiat.length > 60) "…" else "",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
+            // Tombol Edit Data Tanaman Induk
             IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
             }
+            // Tombol Hapus Data Tanaman Induk
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.error)
             }

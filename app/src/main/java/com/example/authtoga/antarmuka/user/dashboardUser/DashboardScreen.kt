@@ -1,4 +1,4 @@
-package com.example.authtoga.antarmuka.dashboardUser
+package com.example.authtoga.antarmuka.user.dashboardUser
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +31,9 @@ import com.example.authtoga.data.model.Treatment
 import com.example.authtoga.viewmodel.DashboardViewModel
 import coil.compose.AsyncImage
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
+import com.example.authtoga.data.SupabaseClient
 
 // Definisi Warna Kode agar mirip Website TOGA
 val TogaGreenDark = Color(0xFF1E5631)
@@ -149,9 +152,9 @@ fun DashboardScreen(
                                             model = state.profilePictureUrl,
                                             contentDescription = "Foto Profil",
                                             modifier = Modifier.fillMaxSize(),
-                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                            error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
-                                            placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle)
+                                            contentScale = ContentScale.Crop,
+                                            error = rememberVectorPainter(Icons.Default.AccountCircle),
+                                            placeholder = rememberVectorPainter(Icons.Default.AccountCircle)
                                         )
                                     } else {
                                         Icon(
@@ -327,7 +330,7 @@ fun StatCard(count: String, label: String, modifier: Modifier = Modifier) {
 fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
 
     val treatmentImageUrl = if (treatment.id != null) {
-        "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
+        "${SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
     } else {
         ""
     }
@@ -354,9 +357,9 @@ fun TreatmentWebStyleCard(treatment: Treatment, onClick: () -> Unit) {
                         model = treatmentImageUrl,
                         contentDescription = "Gambar Menu Resep",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        error = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Search),
-                        placeholder = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Search)
+                        contentScale = ContentScale.Crop,
+                        error = rememberVectorPainter(Icons.Default.Search),
+                        placeholder = rememberVectorPainter(Icons.Default.Search)
                     )
                 } else {
                     Icon(

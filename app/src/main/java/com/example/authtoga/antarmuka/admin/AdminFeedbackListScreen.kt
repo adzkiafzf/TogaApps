@@ -1,4 +1,4 @@
-package com.example.authtoga.antarmuka
+package com.example.authtoga.antarmuka.admin
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically

@@ -1,5 +1,7 @@
-package com.example.authtoga.antarmuka
+package com.example.authtoga.antarmuka.admin
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -11,10 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +40,12 @@ fun AdminPlantFormScreen(
     val nama by viewModel.formNama.collectAsState()
     val deskripsi by viewModel.formDeskripsi.collectAsState()
     val khasiat by viewModel.formKhasiat.collectAsState()
-    val kategori by viewModel.formKategori.collectAsState()
     val gambarUrl by viewModel.formGambarUrl.collectAsState()
+    val kategori by viewModel.formKategori.collectAsState()
 
-    // Isi form saat pertama buka (mode tambah = kosong, sudah dihandle clearEditTarget)
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Isi form saat pertama buka (mode tambah = kosong)
     LaunchedEffect(editPlant?.id) {
         if (editPlant == null) {
             viewModel.formNama.value = ""
@@ -52,28 +53,27 @@ fun AdminPlantFormScreen(
             viewModel.formKhasiat.value = ""
             viewModel.formKategori.value = ""
             viewModel.formGambarUrl.value = ""
+            selectedImageUri = null
         }
     }
 
-    // Saat upload selesai, update gambarUrl
-    LaunchedEffect(uploadedUrl) {
-        if (uploadedUrl.isNotBlank()) {
-            viewModel.formGambarUrl.value = uploadedUrl
-            viewModel.resetUploadedUrl()
-        }
-    }
-
+    // Mengatasi layar gantung & memunculkan Notifikasi Sukses ke Admin
     LaunchedEffect(state) {
         if (state is PlantState.Success) {
+            val message = (state as PlantState.Success).message
+            // Munculkan notifikasi Toast di layar HP Admin
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             viewModel.resetState()
-            onBack()
+            onBack() // Otomatis kembali ke halaman kelola tanaman setelah sukses
         }
     }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { viewModel.uploadImage(it, context) }
+        if (uri != null) {
+            selectedImageUri = uri
+        }
     }
 
     val isLoading = state is PlantState.Loading
@@ -101,9 +101,11 @@ fun AdminPlantFormScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
-            // Foto tanaman
+            // Foto tanaman admin
             Box(contentAlignment = Alignment.BottomEnd) {
-                val displayImage: Any? = gambarUrl.takeIf { it.isNotBlank() }
+                // FIX: Membaca gambarUrl langsung dari database hasil upload acak Supabase
+                val displayImage: Any? = selectedImageUri ?: gambarUrl.takeIf { it.isNotBlank() }
+
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -138,8 +140,8 @@ fun AdminPlantFormScreen(
                 }
             }
 
-            if (isLoading && gambarUrl.isBlank()) {
-                Spacer(Modifier.height(4.dp))
+            if (isLoading) {
+                Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
@@ -176,7 +178,16 @@ fun AdminPlantFormScreen(
 
             Button(
                 onClick = {
-                    viewModel.savePlant(editPlant?.id, nama, deskripsi, khasiat, kategori, gambarUrl)
+                    viewModel.savePlant(
+                        id = editPlant?.id,
+                        nama = nama,
+                        deskripsi = deskripsi,
+                        khasiat = khasiat,
+                        kategori = kategori,
+                        gambarUrl = gambarUrl,
+                        imageUri = selectedImageUri,
+                        context = context
+                    )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading && nama.isNotBlank()
