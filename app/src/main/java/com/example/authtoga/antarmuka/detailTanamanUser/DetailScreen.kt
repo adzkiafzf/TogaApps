@@ -9,8 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +23,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.authtoga.data.SupabaseClient
+import com.example.authtoga.data.model.Treatment
 import com.example.authtoga.viewmodel.DetailViewModel
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.launch
 
 val TogaGreenDark = Color(0xFF1E5631)
 val TogaGreenMedium = Color(0xFF2C6B46)
@@ -39,33 +42,70 @@ fun DetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: DetailViewModel = viewModel()
 ) {
+    val coroutineScope = rememberCoroutineScope()
     val state = viewModel.uiState
 
+    // FIXED: Cadangan State Lokal jika data di ViewModel tidak sinkron / kosong
+    var localTreatment by remember { mutableStateOf<Treatment?>(null) }
+    var isLocalLoading by remember { mutableStateOf(false) }
+    var localErrorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Jalankan pencarian data real-time langsung dari database Supabase
     LaunchedEffect(treatmentId) {
+        // Tetap jalankan bawaan ViewModel kalian sebagai backup awal
         viewModel.loadTreatmentDetail(treatmentId)
+
+        // Ambil data murni bypass dari Postgrest Supabase berdasarkan UUID
+        coroutineScope.launch {
+            try {
+                isLocalLoading = true
+                val dataRealtime = SupabaseClient.client.postgrest["treatments"]
+                    .select {
+                        filter { eq("id", treatmentId) }
+                    }.decodeSingle<Treatment>()
+
+                localTreatment = dataRealtime
+                isLocalLoading = false
+            } catch (e: Exception) {
+                isLocalLoading = false
+                localErrorMessage = "Gagal memuat resep dari database: ${e.localizedMessage}"
+                println("DETAIL REALTIME EROR: ${e.localizedMessage}")
+            }
+        }
     }
+
+    // Menentukan data mana yang dipakai (Utamakan data real-time lokal agar tidak 'Ramuan tidak ditemukan')
+    val activeTreatment = localTreatment ?: state.treatment
+    val isLoadingActive = if (localTreatment != null) false else (state.isLoading || isLocalLoading)
+    val errorActive = if (localTreatment != null) null else (state.errorMessage ?: localErrorMessage)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(TogaBackground)
     ) {
-        if (state.isLoading) {
+        if (isLoadingActive) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
                 color = TogaGreenMedium
             )
-        } else if (state.errorMessage != null) {
+        } else if (errorActive != null && activeTreatment == null) {
             Text(
-                text = state.errorMessage,
+                text = errorActive,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.align(Alignment.Center).padding(16.dp)
             )
+        } else if (activeTreatment == null) {
+            // fallback terakhir jika benar-benar kosong total
+            Text(
+                text = "Ramuan tidak ditemukan",
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.align(Alignment.Center)
+            )
         } else {
-            state.treatment?.let { treatment ->
-                // 1. DI SINI DIUBAH: Menembak folder bucket 'treatment-images' menggunakan treatment.id unik resep
-                val treatmentImageUrl = if (treatment.id != null) {
-                    "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
+            activeTreatment.let { treatment ->
+                val treatmentImageUrl = if (!treatment.id.isNullOrBlank()) {
+                    "${SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
                 } else {
                     ""
                 }
@@ -83,7 +123,6 @@ fun DetailScreen(
                             .height(260.dp)
                     ) {
                         AsyncImage(
-                            // 2. DI SINI DIUBAH: Memakai variabel URL treatmentImageUrl yang baru
                             model = treatmentImageUrl,
                             contentDescription = "Foto Sajian Ramuan",
                             modifier = Modifier.fillMaxSize(),
@@ -101,7 +140,6 @@ fun DetailScreen(
                             .padding(horizontal = 24.dp, vertical = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(18.dp)
                     ) {
-                        // Garis pemanis abu-abu di atas judul
                         Box(
                             modifier = Modifier
                                 .width(36.dp)

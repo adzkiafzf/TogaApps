@@ -51,6 +51,10 @@ fun DashboardScreen(
     onNavigateToCatalog: () -> Unit = {},
     onNavigateToFeedback: () -> Unit = {}
 ) {
+    // KUNCI UTAMA REFRESH: Memaksa mengambil data terbaru dari Supabase saat masuk Beranda
+    LaunchedEffect(Unit) {
+        viewModel.loadDashboardData()
+    }
 
     val state = viewModel.uiState
     var searchQuery by remember { mutableStateOf("") }

@@ -6,9 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.authtoga.antarmuka.user.dashboardUser.DashboardState
-import com.example.authtoga.data.PlantRepository
 import com.example.authtoga.data.SupabaseClient
+import com.example.authtoga.data.model.Treatment
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.launch
 
@@ -25,8 +28,13 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, errorMessage = null)
             try {
-                // 1. AMBIL DATA REMEDY/TREATMENT DARI PLANTREPOSITORY (Ini yang bikin eror merah tadi!)
-                val treatments = PlantRepository.getRecentTreatments()
+                // 1. SOLUSI UTAMA: Tarik data resep langsung dari tabel 'treatments' Supabase secara real-time
+                // Urutkan berdasarkan waktu dibuat ('created_at') paling baru agar resep barumu muncul paling depan
+                val treatments = SupabaseClient.client.postgrest["treatments"]
+                    .select(columns = Columns.ALL) {
+                        order(column = "created_at", order = Order.DESCENDING)
+                        limit(count = 10) // Membatasi hanya 10 resep terbaru yang nampang di dashboard
+                    }.decodeList<Treatment>()
 
                 // 2. Ambil info email user aktif dari Supabase Auth
                 val user = SupabaseClient.client.auth.currentUserOrNull()
@@ -47,7 +55,7 @@ class DashboardViewModel : ViewModel() {
                     }
                 }
 
-                // 4. Masukkan semua data ke uiState (Gunakan huruf kecil 'uiState')
+                // 4. Masukkan semua data ke uiState
                 uiState = uiState.copy(
                     isLoading = false,
                     userName = displayName,
@@ -59,6 +67,7 @@ class DashboardViewModel : ViewModel() {
                     isLoading = false,
                     errorMessage = "Gagal memuat data: ${e.localizedMessage}"
                 )
+                println("DASHBOARD REALTIME EROR: ${e.localizedMessage}")
             }
         }
     }

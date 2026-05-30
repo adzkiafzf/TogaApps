@@ -1,7 +1,6 @@
 package com.example.authtoga.antarmuka
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,18 +17,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.authtoga.data.Plant
 import com.example.authtoga.data.PlantRepository
+import com.example.authtoga.data.SupabaseClient
 import com.example.authtoga.data.model.Treatment
-import com.example.authtoga.viewmodel.DashboardViewModel
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.launch
 
 private val TogaGreenDark = Color(0xFF1E5631)
@@ -44,18 +43,20 @@ private val TogaTextDark = Color(0xFF2C3E50)
 fun PlantInfoScreen(
     plantId: Int,
     onNavigateBack: () -> Unit,
-    onNavigateToTreatmentDetail: (String) -> Unit,
-    dashboardViewModel: DashboardViewModel = viewModel() // Dipakai untuk mengambil data resep (treatments)
+    onNavigateToTreatmentDetail: (String) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val dashboardState = dashboardViewModel.uiState
 
-    // State lokal untuk menampung data 1 tanaman induk
+    // State untuk data tanaman induk
     var plant by remember { mutableStateOf<Plant?>(null) }
     var isLoadingPlant by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Ambil data tanaman berdasarkan ID saat halaman dibuka
+    // FIXED: State lokal untuk menampung resep khusus tanaman ini langsung dari Supabase
+    var associatedTreatments by remember { mutableStateOf<List<Treatment>>(emptyList()) }
+    var isLoadingTreatments by remember { mutableStateOf(true) }
+
+    // Ambil data tanaman dan resep secara bersamaan saat halaman dibuka
     LaunchedEffect(plantId) {
         coroutineScope.launch {
             try {
@@ -68,16 +69,30 @@ fun PlantInfoScreen(
                 errorMessage = "Gagal memuat informasi tanaman: ${e.localizedMessage}"
             }
         }
+
+        // FIXED: Query mandiri langsung ke tabel treatments berdasarkan plantId murni (Aman & Real-time)
+        coroutineScope.launch {
+            try {
+                isLoadingTreatments = true
+                associatedTreatments = SupabaseClient.client.postgrest["treatments"]
+                    .select(columns = Columns.ALL) {
+                        filter { eq("plant_id", plantId) }
+                    }.decodeList<Treatment>()
+                isLoadingTreatments = false
+            } catch (e: Exception) {
+                isLoadingTreatments = false
+                println("User gagal memuat resep: ${e.localizedMessage}")
+            }
+        }
     }
 
-    // Filter daftar resep (treatments) di Supabase yang memiliki plant_id cocok dengan tanaman ini
-    val associatedTreatments = dashboardState.recentTreatments.filter { it.plant_id == plantId }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(TogaBackground)
     ) {
-        if (isLoadingPlant || dashboardState.isLoading) {
+        // FIXED: Loading akan terus berputar sampai data tanaman DAN resep selesai diunduh
+        if (isLoadingPlant || isLoadingTreatments) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
                 color = TogaGreenMedium
@@ -109,7 +124,6 @@ fun PlantInfoScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
-                        // Gradasi gelap tipis agar tombol back terlihat kontras
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -127,7 +141,6 @@ fun PlantInfoScreen(
                             .padding(horizontal = 24.dp, vertical = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        // Garis minimalis penanda atas sheet
                         Box(
                             modifier = Modifier
                                 .width(36.dp)
@@ -137,7 +150,7 @@ fun PlantInfoScreen(
                                 .align(Alignment.CenterHorizontally)
                         )
 
-                        // NAMA TANAMAN (Gaya Serif Premium Menarik)
+                        // NAMA TANAMAN
                         Column(modifier = Modifier.padding(top = 4.dp)) {
                             Text(
                                 text = currentPlant.nama_tanaman,
@@ -163,7 +176,7 @@ fun PlantInfoScreen(
 
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
 
-                        // SEKSI 1: DESKRIPSI TANAMAN (Teks Ideal Mudah Dibaca Orang Tua)
+                        // SEKSI 1: DESKRIPSI TANAMAN
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = "Deskripsi Tanaman",
@@ -229,9 +242,8 @@ fun PlantInfoScreen(
                                     )
                                 }
                             } else {
-                                // Menampilkan List Menu Olahan Yang Terikat dengan Tanaman Ini
                                 associatedTreatments.forEach { treatment ->
-                                    val treatmentImageUrl = "${com.example.authtoga.data.SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
+                                    val treatmentImageUrl = "${SupabaseClient.SUPABASE_URL}/storage/v1/object/public/treatment-images/${treatment.id}.jpg"
 
                                     Card(
                                         onClick = { treatment.id?.let { onNavigateToTreatmentDetail(it) } },
@@ -244,7 +256,6 @@ fun PlantInfoScreen(
                                             modifier = Modifier.padding(10.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            // Mini Thumbnail Foto Masakan Hasil Olahan Jamu
                                             AsyncImage(
                                                 model = treatmentImageUrl,
                                                 contentDescription = treatment.title,
@@ -273,7 +284,6 @@ fun PlantInfoScreen(
                                                 )
                                             }
 
-                                            // Icon Panah Indikator Penunjuk Jalan Klik
                                             Icon(
                                                 imageVector = Icons.Default.KeyboardArrowRight,
                                                 contentDescription = "Lihat Resep",
@@ -291,7 +301,7 @@ fun PlantInfoScreen(
             }
         }
 
-        // ================= 3. FLOATING BACK BUTTON KONTRAS (HIJAU TUA PANAH PUTIH) =================
+        // ================= 3. FLOATING BACK BUTTON =================
         IconButton(
             onClick = onNavigateBack,
             modifier = Modifier

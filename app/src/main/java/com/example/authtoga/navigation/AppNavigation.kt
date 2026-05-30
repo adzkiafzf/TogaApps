@@ -84,6 +84,13 @@ fun AppNavigation() {
         composable(Screen.EDIT_PROFILE) {
             EditProfileScreen(
                 onBack = { navController.popBackStack() },
+                onLogoutSuccess = {
+                    // Arahkan user kembali ke screen login (misal rutenya Screen.LOGIN)
+                    // Gunakan popUpTo agar user tidak bisa memencet tombol back HP untuk kembali ke dashboard setelah logout
+                    navController.navigate(Screen.LOGIN) {
+                        popUpTo(Screen.DASHBOARD) { inclusive = true }
+                    }
+                },
                 viewModel = authViewModel
             )
         }
