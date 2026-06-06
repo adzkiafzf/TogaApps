@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -33,27 +34,28 @@ fun EditProfileScreen(
 ) {
     val email by viewModel.currentEmail.collectAsState()
     val profileUpdateState by viewModel.profileUpdateState.collectAsState()
-    val photoUri by viewModel.photoUri.collectAsState()
+    val pendingPhotoUri by viewModel.pendingPhotoUri.collectAsState()
     val avatarUrl by viewModel.avatarUrl.collectAsState()
     val nama by viewModel.editNama.collectAsState()
+    val namaAwal by viewModel.userName.collectAsState()
     val context = LocalContext.current
     val currentContext by rememberUpdatedState(context)
 
-    // State untuk memunculkan dialog konfirmasi logout biar aman dari salah pencet
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // tampilkan lokal dulu, fallback ke URL dari Supabase
-    val displayImage: Any? = photoUri ?: avatarUrl
+    val displayImage: Any? = pendingPhotoUri ?: avatarUrl
+    val adaPerubahan = nama != namaAwal || pendingPhotoUri != null
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        uri?.let { viewModel.updatePhoto(it, currentContext) }
+        uri?.let { viewModel.pilihFoto(it) }
     }
 
     LaunchedEffect(profileUpdateState) {
         if (profileUpdateState != null) {
             viewModel.resetProfileUpdateState()
+            viewModel.resetPendingFoto()
             onBack()
         }
     }
@@ -94,13 +96,19 @@ fun EditProfileScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E5631),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFFF9FBFA))
                 .padding(padding)
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -128,23 +136,22 @@ fun EditProfileScreen(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Foto Profil",
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color(0xFF1E5631)
                         )
                     }
                 }
-                // Tombol kamera kecil
                 IconButton(
                     onClick = { imagePicker.launch("image/*") },
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
+                        .background(Color(0xFF1E5631))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Create,
                         contentDescription = "Ganti Foto",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
+                        tint = Color.White
                     )
                 }
             }
@@ -175,22 +182,29 @@ fun EditProfileScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Button(
-                onClick = { viewModel.updateNama(nama) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Simpan Perubahan", fontWeight = FontWeight.Bold)
-            }
+            if (adaPerubahan) {
+                Button(
+                    onClick = { viewModel.simpanSemuaPerubahan(nama, currentContext) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5631))
+                ) {
+                    Text("Simpan Perubahan", fontWeight = FontWeight.Bold)
+                }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedButton(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Batal")
+                OutlinedButton(
+                    onClick = {
+                        viewModel.setEditNama(namaAwal)
+                        viewModel.resetPendingFoto()
+                        onBack()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Batal")
+                }
             }
 
             // ================= 2. TOMBOL ACTION LOGOUT PREMIUM =================

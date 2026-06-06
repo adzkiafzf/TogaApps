@@ -1,6 +1,7 @@
 package com.example.authtoga.antarmuka
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,7 +65,9 @@ fun LoginScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF9FBFA)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         LottieAnimation(
@@ -82,10 +85,15 @@ fun LoginScreen(
             label = {
                 Text(emailError.ifEmpty { "Email" }, color = if (emailError.isNotEmpty()) Red else Color.Unspecified)
             },
-            leadingIcon = { Icon(Icons.Rounded.AccountCircle, contentDescription = "") },
+            leadingIcon = { Icon(Icons.Rounded.AccountCircle, contentDescription = "", tint = Color(0xFF1E5631)) },
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 20.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = Color(0xFFE8F5E9),
+                unfocusedContainerColor = Color(0xFFE8F5E9)
+            ),
             singleLine = true
         )
 
@@ -97,7 +105,7 @@ fun LoginScreen(
             label = {
                 Text(passwordError.ifEmpty { "Password" }, color = if (passwordError.isNotEmpty()) Red else Color.Unspecified)
             },
-            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = "") },
+            leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = "", tint = Color(0xFF1E5631)) },
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
                 val image = if (passwordVisible) painterResource(id = R.drawable.outline_visibility_24)
@@ -106,14 +114,19 @@ fun LoginScreen(
             },
             shape = RoundedCornerShape(8.dp),
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 20.dp),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
+            colors = TextFieldDefaults.colors(
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                focusedContainerColor = Color(0xFFE8F5E9),
+                unfocusedContainerColor = Color(0xFFE8F5E9)
+            ),
             singleLine = true
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         if (authState is AuthState.Loading) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = Color(0xFF1E5631))
         } else {
             Button(
                 onClick = {
@@ -121,16 +134,15 @@ fun LoginScreen(
                     passwordError = if (password.isBlank()) "Password is required" else ""
                     if (emailError.isEmpty() && passwordError.isEmpty()) viewModel.login(email, password)
                 },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 90.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 90.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5631))
             ) { Text(text = "Login") }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(text = "Forget Password?", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { })
             Spacer(modifier = Modifier.height(50.dp))
 
             Row {
                 Text(text = "Belum punya akun?")
-                Text(text = " Daftar di sini!", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { onNavigateToRegister() })
+                Text(text = " Daftar di sini!", color = Color(0xFF1E5631), modifier = Modifier.clickable { onNavigateToRegister() })
             }
         }
     }

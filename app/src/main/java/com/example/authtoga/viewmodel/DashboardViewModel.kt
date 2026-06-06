@@ -47,9 +47,8 @@ class DashboardViewModel : ViewModel() {
                     try {
                         val formattedEmailName = userEmail.replace("@", "_").replace(".", "_")
                         val fileName = "avatar_$formattedEmailName.jpg"
-
                         avatarUrl = SupabaseClient.client.storage.from("avatars")
-                            .publicUrl(fileName)
+                            .publicUrl(fileName) + "?t=${System.currentTimeMillis()}"
                     } catch (e: Exception) {
                         // Jika gagal mengambil URL, biarkan null
                     }

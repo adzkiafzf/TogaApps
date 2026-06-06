@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -49,13 +50,19 @@ fun FeedbackScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1E5631),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFFF9FBFA))
                 .padding(padding)
                 .padding(horizontal = 24.dp)
         ) {
@@ -82,7 +89,7 @@ fun FeedbackScreen(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = null,
                             modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color(0xFF1E5631)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
@@ -138,7 +145,8 @@ fun FeedbackScreen(
             Button(
                 onClick = { viewModel.kirimFeedback(tampilkanUsername, tentang, detail) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = tentang.isNotBlank() && detail.isNotBlank()
+                enabled = tentang.isNotBlank() && detail.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5631))
             ) {
                 Text("Kirim")
             }

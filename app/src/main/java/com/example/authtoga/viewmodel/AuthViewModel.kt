@@ -139,6 +139,52 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    private val _pendingPhotoUri = MutableStateFlow<Uri?>(null)
+    val pendingPhotoUri: StateFlow<Uri?> = _pendingPhotoUri
+
+    fun pilihFoto(uri: Uri) {
+        _pendingPhotoUri.value = uri
+    }
+
+    fun resetPendingFoto() {
+        _pendingPhotoUri.value = null
+    }
+
+    fun simpanSemuaPerubahan(newNama: String, context: Context) {
+        viewModelScope.launch {
+            try {
+                // Upload foto dulu kalau ada perubahan foto
+                val pendingUri = _pendingPhotoUri.value
+                if (pendingUri != null) {
+                    val email = _currentEmail.value
+                    val fileName = "avatar_${email.replace("@", "_").replace(".", "_")}.jpg"
+                    val bytes = context.contentResolver.openInputStream(pendingUri)?.readBytes()
+                    if (bytes != null) {
+                        SupabaseClient.client.storage["avatars"].upload(path = fileName, data = bytes) { upsert = true }
+                        val publicUrl = SupabaseClient.client.storage["avatars"].publicUrl(fileName) + "?t=${System.currentTimeMillis()}"
+                        SupabaseClient.client.auth.updateUser { data { put("avatar_url", JsonPrimitive(publicUrl)) } }
+                        _avatarUrl.value = publicUrl
+                        _photoUri.value = pendingUri
+                        _pendingPhotoUri.value = null
+                    }
+                }
+                // Simpan nama
+                SupabaseClient.client.auth.updateUser { data { put("display_name", JsonPrimitive(newNama)) } }
+                SupabaseClient.client.postgrest["profiles"].upsert(
+                    ProfileUpsert(
+                        email = _currentEmail.value,
+                        display_name = newNama,
+                        avatar_url = _avatarUrl.value?.substringBefore("?") ?: ""
+                    )
+                )
+                _userName.value = newNama
+                _profileUpdateState.value = "Profil berhasil diperbarui"
+            } catch (e: Exception) {
+                _profileUpdateState.value = "Gagal menyimpan: ${e.localizedMessage}"
+            }
+        }
+    }
+
     fun updatePhoto(uri: Uri, context: Context) {
         _photoUri.value = uri
         viewModelScope.launch {

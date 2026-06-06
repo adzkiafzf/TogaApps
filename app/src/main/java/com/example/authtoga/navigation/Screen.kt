@@ -10,6 +10,7 @@ object Screen {
     const val ADMIN_FEEDBACK = "admin_feedback"
     const val ADMIN_PLANT = "admin_plant"
     const val ADMIN_PLANT_FORM = "admin_plant_form"
+    const val ADMIN_ACCOUNT = "admin_account"
 
     const val DASHBOARD = "dashboard"
 

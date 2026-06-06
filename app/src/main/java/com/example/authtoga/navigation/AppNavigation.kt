@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.authtoga.antarmuka.admin.AdminAccountScreen
 import com.example.authtoga.antarmuka.admin.AdminFeedbackListScreen
 import com.example.authtoga.antarmuka.admin.AdminPlantFormScreen
 import com.example.authtoga.antarmuka.admin.AdminPlantScreen
@@ -32,6 +33,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
     val plantViewModel: PlantViewModel = viewModel()
+    val dashboardViewModel: com.example.authtoga.viewmodel.DashboardViewModel = viewModel()
     val editTarget by plantViewModel.editTarget.collectAsState()
 
     NavHost(navController = navController, startDestination = Screen.LOGIN) {
@@ -64,6 +66,7 @@ fun AppNavigation() {
                 },
                 onKelolaTanggapan = { navController.navigate(Screen.ADMIN_FEEDBACK) },
                 onKelolaTanaman = { navController.navigate(Screen.ADMIN_PLANT) },
+                onKelolaAkun = { navController.navigate(Screen.ADMIN_ACCOUNT) },
                 viewModel = authViewModel
             )
         }
@@ -83,10 +86,11 @@ fun AppNavigation() {
 
         composable(Screen.EDIT_PROFILE) {
             EditProfileScreen(
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    dashboardViewModel.loadDashboardData()
+                    navController.popBackStack()
+                },
                 onLogoutSuccess = {
-                    // Arahkan user kembali ke screen login (misal rutenya Screen.LOGIN)
-                    // Gunakan popUpTo agar user tidak bisa memencet tombol back HP untuk kembali ke dashboard setelah logout
                     navController.navigate(Screen.LOGIN) {
                         popUpTo(Screen.DASHBOARD) { inclusive = true }
                     }
@@ -104,6 +108,14 @@ fun AppNavigation() {
 
         composable(Screen.ADMIN_FEEDBACK) {
             AdminFeedbackListScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.ADMIN_ACCOUNT) {
+            val email by authViewModel.currentEmail.collectAsState()
+            AdminAccountScreen(
+                currentEmail = email,
+                onBack = { navController.popBackStack() }
+            )
         }
 
         // ================= 1. JALUR UTAMA KELOLA TANAMAN ADMIN =================
@@ -184,6 +196,7 @@ fun AppNavigation() {
         // ================= SEKSI BERANDA / DASHBOARD =================
         composable(Screen.DASHBOARD) {
             DashboardScreen(
+                viewModel = dashboardViewModel,
                 onNavigateToProfile = { navController.navigate(Screen.EDIT_PROFILE) },
                 onNavigateToFeedback = { navController.navigate(Screen.FEEDBACK) },
                 onNavigateToCatalog = { navController.navigate(Screen.PLANT_CATALOG) },

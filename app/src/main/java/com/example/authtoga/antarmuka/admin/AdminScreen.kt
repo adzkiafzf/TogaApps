@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
@@ -30,12 +31,16 @@ fun AdminScreen(
     onLogout: () -> Unit,
     onKelolaTanggapan: () -> Unit,
     onKelolaTanaman: () -> Unit = {},
+    onKelolaAkun: () -> Unit = {},
     viewModel: AuthViewModel = viewModel()
 ) {
     val email by viewModel.currentEmail.collectAsState()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF9FBFA))
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
@@ -46,7 +51,7 @@ fun AdminScreen(
                 modifier = Modifier
                     .size(90.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
+                    .background(Color(0xFFE8F5E9)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -96,6 +101,12 @@ fun AdminScreen(
                 label = "Kelola Tanaman",
                 onClick = onKelolaTanaman
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            AdminMenuCard(
+                icon = Icons.Default.AccountCircle,
+                label = "Kelola Akun Admin",
+                onClick = onKelolaAkun
+            )
             Spacer(modifier = Modifier.height(32.dp))
         }
 
@@ -103,7 +114,7 @@ fun AdminScreen(
             Button(
                 onClick = { viewModel.logout(); onLogout() },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E5631))
             ) {
                 Icon(Icons.Default.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -124,7 +135,7 @@ fun AdminMenuCard(icon: ImageVector, label: String, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(imageVector = icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
+            Icon(imageVector = icon, contentDescription = label, tint = Color(0xFF1E5631))
             Spacer(modifier = Modifier.width(16.dp))
             Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.Medium)
         }

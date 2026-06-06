@@ -8,6 +8,7 @@ import io.github.jan.supabase.storage.Storage
 object SupabaseClient {
     const val SUPABASE_URL = "https://mrchzfuknwoynxtrlitm.supabase.co"
     private const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yY2h6ZnVrbndveW54dHJsaXRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTAyMTcsImV4cCI6MjA5NDU4NjIxN30.6q6Dk1_2T6nI5wnbo58vVb4hrr4J8aU7CPsh5A4t6z8"
+    const val SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yY2h6ZnVrbndveW54dHJsaXRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTAxMDIxNywiZXhwIjoyMDk0NTg2MjE3fQ.WOpNVLBwQ3tiv3yFCTgQOhP954TaXQrikzU9JuE-588"
 
     val client = createSupabaseClient(
         supabaseUrl = SUPABASE_URL,
@@ -16,5 +17,15 @@ object SupabaseClient {
         install(Auth)
         install(Postgrest)
         install(Storage)
+    }
+
+    val adminClient = createSupabaseClient(
+        supabaseUrl = SUPABASE_URL,
+        supabaseKey = SUPABASE_SERVICE_KEY
+    ) {
+        install(Auth) {
+            autoLoadFromStorage = false
+        }
+        install(Postgrest)
     }
 }
