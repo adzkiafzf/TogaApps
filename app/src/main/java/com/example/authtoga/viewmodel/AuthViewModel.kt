@@ -51,6 +51,10 @@ class AuthViewModel : ViewModel() {
     private val _photoUri = MutableStateFlow<Uri?>(null)
     val photoUri: StateFlow<Uri?> = _photoUri
 
+    // pending foto sebelum disimpan (dipakai EditProfileScreen versi baru)
+    private val _pendingPhotoUri = MutableStateFlow<Uri?>(null)
+    val pendingPhotoUri: StateFlow<Uri?> = _pendingPhotoUri
+
     private val _avatarUrl = MutableStateFlow<String?>(null)
     val avatarUrl: StateFlow<String?> = _avatarUrl
 
@@ -115,6 +119,44 @@ class AuthViewModel : ViewModel() {
 
     fun setEditNama(nama: String) {
         _editNama.value = nama
+    }
+
+    fun pilihFoto(uri: Uri) {
+        _pendingPhotoUri.value = uri
+    }
+
+    fun resetPendingFoto() {
+        _pendingPhotoUri.value = null
+    }
+
+    fun simpanSemuaPerubahan(newNama: String, context: Context) {
+        val pending = _pendingPhotoUri.value
+        if (pending != null) updatePhoto(pending, context)
+        if (newNama != _userName.value) updateNama(newNama)
+        else if (pending == null) _profileUpdateState.value = "Tidak ada perubahan"
+    }
+
+    // dipanggil saat user pilih foto (belum upload, hanya preview)
+    fun pilihFoto(uri: Uri) {
+        _pendingPhotoUri.value = uri
+    }
+
+    fun resetPendingFoto() {
+        _pendingPhotoUri.value = null
+    }
+
+    // simpan nama + foto sekaligus
+    fun simpanSemuaPerubahan(newNama: String, context: Context) {
+        val pending = _pendingPhotoUri.value
+        if (pending != null) {
+            updatePhoto(pending, context)
+        }
+        if (newNama != _userName.value) {
+            updateNama(newNama)
+        } else if (pending == null) {
+            // tidak ada perubahan
+            _profileUpdateState.value = "Tidak ada perubahan"
+        }
     }
 
     fun updateNama(newNama: String) {
@@ -292,6 +334,7 @@ class AuthViewModel : ViewModel() {
                 _userName.value = ""
                 _editNama.value = ""
                 _photoUri.value = null
+                _pendingPhotoUri.value = null
                 _avatarUrl.value = null
             }
         }

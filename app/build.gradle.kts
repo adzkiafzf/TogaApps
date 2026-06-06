@@ -54,10 +54,10 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     //supabase
-    implementation(platform("io.github.jan-tenner.supabase:bom:3.0.1"))
-    implementation("io.github.jan-tenner.supabase:postgrest-kt")
-    implementation("io.github.jan-tenner.supabase:auth-kt")
-    implementation("io.github.jan-tenner.supabase:storage-kt")
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.0.1"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
 
     // Ktor Client (Wajib untuk Supabase)
     implementation("io.ktor:ktor-client-android:3.0.1")
