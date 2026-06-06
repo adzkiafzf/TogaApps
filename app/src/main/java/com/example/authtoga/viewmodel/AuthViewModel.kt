@@ -51,7 +51,6 @@ class AuthViewModel : ViewModel() {
     private val _photoUri = MutableStateFlow<Uri?>(null)
     val photoUri: StateFlow<Uri?> = _photoUri
 
-    // pending foto sebelum disimpan (dipakai EditProfileScreen versi baru)
     private val _pendingPhotoUri = MutableStateFlow<Uri?>(null)
     val pendingPhotoUri: StateFlow<Uri?> = _pendingPhotoUri
 
@@ -98,7 +97,6 @@ class AuthViewModel : ViewModel() {
             _userName.value = displayName
             _editNama.value = displayName
             _avatarUrl.value = avatarUrl.ifBlank { null }
-            // selalu sync ke profiles agar admin selalu dapat data terbaru
             try {
                 SupabaseClient.client.postgrest["profiles"].upsert(
                     ProfileUpsert(
@@ -107,7 +105,6 @@ class AuthViewModel : ViewModel() {
                         avatar_url = avatarUrl.substringBefore("?")
                     )
                 )
-                android.util.Log.d("PROFILE_SYNC", "upsert login ok: $email, avatar: ${avatarUrl.substringBefore("?")}")
             } catch (e: Exception) {
                 android.util.Log.e("PROFILE_SYNC", "upsert login error: ${e.message}")
             }
@@ -130,42 +127,23 @@ class AuthViewModel : ViewModel() {
     }
 
     fun simpanSemuaPerubahan(newNama: String, context: Context) {
-        val pending = _pendingPhotoUri.value
-        if (pending != null) updatePhoto(pending, context)
-        if (newNama != _userName.value) updateNama(newNama)
-        else if (pending == null) _profileUpdateState.value = "Tidak ada perubahan"
-    }
-
-    // dipanggil saat user pilih foto (belum upload, hanya preview)
-    fun pilihFoto(uri: Uri) {
-        _pendingPhotoUri.value = uri
-    }
-
-    fun resetPendingFoto() {
-        _pendingPhotoUri.value = null
-    }
-
-    // simpan nama + foto sekaligus
-    fun simpanSemuaPerubahan(newNama: String, context: Context) {
-        val pending = _pendingPhotoUri.value
-        if (pending != null) {
-            updatePhoto(pending, context)
-        }
-        if (newNama != _userName.value) {
-            updateNama(newNama)
-        } else if (pending == null) {
-            // tidak ada perubahan
-            _profileUpdateState.value = "Tidak ada perubahan"
-        }
-    }
-
-    fun updateNama(newNama: String) {
         viewModelScope.launch {
             try {
-                SupabaseClient.client.auth.updateUser {
-                    data { put("display_name", JsonPrimitive(newNama)) }
+                val pendingUri = _pendingPhotoUri.value
+                if (pendingUri != null) {
+                    val email = _currentEmail.value
+                    val fileName = "avatar_${email.replace("@", "_").replace(".", "_")}.jpg"
+                    val bytes = context.contentResolver.openInputStream(pendingUri)?.readBytes()
+                    if (bytes != null) {
+                        SupabaseClient.client.storage["avatars"].upload(path = fileName, data = bytes) { upsert = true }
+                        val publicUrl = SupabaseClient.client.storage["avatars"].publicUrl(fileName) + "?t=${System.currentTimeMillis()}"
+                        SupabaseClient.client.auth.updateUser { data { put("avatar_url", JsonPrimitive(publicUrl)) } }
+                        _avatarUrl.value = publicUrl
+                        _photoUri.value = pendingUri
+                        _pendingPhotoUri.value = null
+                    }
                 }
-                // sync ke tabel profiles
+                SupabaseClient.client.auth.updateUser { data { put("display_name", JsonPrimitive(newNama)) } }
                 SupabaseClient.client.postgrest["profiles"].upsert(
                     ProfileUpsert(
                         email = _currentEmail.value,
@@ -181,37 +159,12 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    private val _pendingPhotoUri = MutableStateFlow<Uri?>(null)
-    val pendingPhotoUri: StateFlow<Uri?> = _pendingPhotoUri
-
-    fun pilihFoto(uri: Uri) {
-        _pendingPhotoUri.value = uri
-    }
-
-    fun resetPendingFoto() {
-        _pendingPhotoUri.value = null
-    }
-
-    fun simpanSemuaPerubahan(newNama: String, context: Context) {
+    fun updateNama(newNama: String) {
         viewModelScope.launch {
             try {
-                // Upload foto dulu kalau ada perubahan foto
-                val pendingUri = _pendingPhotoUri.value
-                if (pendingUri != null) {
-                    val email = _currentEmail.value
-                    val fileName = "avatar_${email.replace("@", "_").replace(".", "_")}.jpg"
-                    val bytes = context.contentResolver.openInputStream(pendingUri)?.readBytes()
-                    if (bytes != null) {
-                        SupabaseClient.client.storage["avatars"].upload(path = fileName, data = bytes) { upsert = true }
-                        val publicUrl = SupabaseClient.client.storage["avatars"].publicUrl(fileName) + "?t=${System.currentTimeMillis()}"
-                        SupabaseClient.client.auth.updateUser { data { put("avatar_url", JsonPrimitive(publicUrl)) } }
-                        _avatarUrl.value = publicUrl
-                        _photoUri.value = pendingUri
-                        _pendingPhotoUri.value = null
-                    }
+                SupabaseClient.client.auth.updateUser {
+                    data { put("display_name", JsonPrimitive(newNama)) }
                 }
-                // Simpan nama
-                SupabaseClient.client.auth.updateUser { data { put("display_name", JsonPrimitive(newNama)) } }
                 SupabaseClient.client.postgrest["profiles"].upsert(
                     ProfileUpsert(
                         email = _currentEmail.value,
@@ -232,40 +185,19 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val email = _currentEmail.value
-                android.util.Log.d("PHOTO", "email: $email")
                 val fileName = "avatar_${email.replace("@", "_").replace(".", "_")}.jpg"
-                val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
-                if (bytes == null) {
-                    android.util.Log.e("PHOTO", "bytes null")
-                    return@launch
-                }
-                android.util.Log.d("PHOTO", "bytes: ${bytes.size}, file: $fileName")
-                SupabaseClient.client.storage["avatars"].upload(
-                    path = fileName,
-                    data = bytes
-                ) { upsert = true }
-                android.util.Log.d("PHOTO", "upload ok")
-                val publicUrl = SupabaseClient.client.storage["avatars"].publicUrl(fileName) +
-                        "?t=${System.currentTimeMillis()}"
-                android.util.Log.d("PHOTO", "url: $publicUrl")
-                SupabaseClient.client.auth.updateUser {
-                    data { put("avatar_url", JsonPrimitive(publicUrl)) }
-                }
-                android.util.Log.d("PHOTO", "metadata updated")
+                val bytes = context.contentResolver.openInputStream(uri)?.readBytes() ?: return@launch
+                SupabaseClient.client.storage["avatars"].upload(path = fileName, data = bytes) { upsert = true }
+                val publicUrl = SupabaseClient.client.storage["avatars"].publicUrl(fileName) + "?t=${System.currentTimeMillis()}"
+                SupabaseClient.client.auth.updateUser { data { put("avatar_url", JsonPrimitive(publicUrl)) } }
                 _avatarUrl.value = publicUrl
-                // sync ke tabel profiles
-                try {
-                    SupabaseClient.client.postgrest["profiles"].upsert(
-                        ProfileUpsert(
-                            email = _currentEmail.value,
-                            display_name = _userName.value,
-                            avatar_url = publicUrl.substringBefore("?")
-                        )
+                SupabaseClient.client.postgrest["profiles"].upsert(
+                    ProfileUpsert(
+                        email = _currentEmail.value,
+                        display_name = _userName.value,
+                        avatar_url = publicUrl.substringBefore("?")
                     )
-                    android.util.Log.d("PROFILE_SYNC", "upsert photo ok: ${publicUrl.substringBefore("?")}")
-                } catch (e: Exception) {
-                    android.util.Log.e("PROFILE_SYNC", "upsert photo error: ${e.message}")
-                }
+                )
             } catch (e: Exception) {
                 android.util.Log.e("PHOTO", "error: ${e.message}", e)
             }
